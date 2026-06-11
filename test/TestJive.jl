@@ -164,3 +164,97 @@ cat("  r.jive (R)    :  median", round(median(mb$time)/1e6, 2), "ms\n")
 """
 
 
+# jive_fast — JIVE with the SVD-reduction speedup (supplement §4).
+# Identical results to jive(), much faster for WIDE data (pᵢ > n): each dataset
+
+"""
+    jive_fast(Xs, r, ri; standardize = true, tol = 1e-10, maxiter = 1000)
+
+Same JIVE decomposition as `jive`, but uses the supplement §4 SVD-reduction:
+each dataset is reduced to an n×rank(Xᵢ) representation before the alternating
+loop, then mapped back. Gives identical results, far faster when pᵢ ≫ n.
+"""
+function jive_fast(Xs::Vector{<:AbstractMatrix}, r::Int, ri::Vector{Int};
+                   standardize = true, tol = 1e-10, maxiter = 1000)
+    k = length(Xs)
+    Xs = [Matrix{Float64}(X) for X in Xs]
+    n = size(Xs[1], 2)
+    all(size(X, 2) == n for X in Xs) || throw(ArgumentError("All datasets must share the same number of columns (samples)"))
+    length(ri) == k || throw(ArgumentError("ri must have one rank per dataset (length $k), got length $(length(ri))"))
+    T_ = Float64
+
+    #  preprocessing (same as jive): row-center, optional Frobenius scale 
+    Xc = Vector{Matrix{T_}}(undef, k)
+    for i in 1:k
+        Xi = Xs[i] .- mean(Xs[i], dims = 2)
+        standardize && (Xi ./= norm(Xi))
+        Xc[i] = Xi
+    end
+
+    #  §4 SVD-REDUCTION: compress each Xᵢ to Xᵢ⊥ = Λᵢ Vᵢᵀ, remember Uᵢ to map back 
+    Ubig    = Vector{Matrix{T_}}(undef, k)         # left singular vectors (pᵢ × rᵢ_full), for mapping back
+    Xred    = Vector{Matrix{T_}}(undef, k)         # reduced data Xᵢ⊥ (rank_i × n)
+    for i in 1:k
+        Fi = svd(Xc[i])
+        tolσ = maximum(Fi.S) * max(size(Xc[i])...) * eps(T_)   # numerical rank threshold
+        rank_i = count(>(tolσ), Fi.S)              # numerical rank of Xᵢ (≤ n)
+        Ubig[i] = Fi.U[:, 1:rank_i]                # pᵢ × rank_i
+        Xred[i] = Diagonal(Fi.S[1:rank_i]) * Fi.Vt[1:rank_i, :]   # Λᵢ Vᵢᵀ  (rank_i × n)
+    end
+
+    pis = [size(X, 1) for X in Xred]               # NOW these are the REDUCED row counts (rank_i)
+    stack(blocks) = reduce(vcat, blocks)
+    function rowblocks(M)
+        idx = 1; out = Matrix{T_}[]
+        for pᵢ in pis
+            push!(out, M[idx:idx+pᵢ-1, :]); idx += pᵢ
+        end
+        out
+    end
+
+    # --- STAGE 1: alternating loop, but on the SMALL reduced matrices ---
+    Xjoint = stack(Xred)
+    A⊥ = [zeros(T_, pis[i], n) for i in 1:k]        # reduced individual structures
+    J⊥ = [zeros(T_, pis[i], n) for i in 1:k]
+    prev_norm = Inf
+    for _ in 1:maxiter
+        F = svd(Xjoint)
+        Jfull = F.U[:, 1:r] * Diagonal(F.S[1:r]) * F.Vt[1:r, :]
+        J⊥ = rowblocks(Jfull)
+        V = F.Vt[1:r, :]'
+        for i in 1:k
+            Xindiv = Xred[i] .- J⊥[i]
+            proj = Xindiv .- (Xindiv * V) * V'
+            Fi = svd(proj)
+            rri = ri[i]
+            A⊥[i] = Fi.U[:, 1:rri] * Diagonal(Fi.S[1:rri]) * Fi.Vt[1:rri, :]
+        end
+        Xjoint = stack([Xred[i] .- A⊥[i] for i in 1:k])
+        R = stack([Xred[i] .- J⊥[i] .- A⊥[i] for i in 1:k])
+        cur = norm(R)
+        abs(prev_norm - cur) < tol && break
+        prev_norm = cur
+    end
+
+    # --- MAP BACK to full variable space: Jᵢ = Uᵢ Jᵢ⊥, Aᵢ = Uᵢ Aᵢ⊥ (supplement §4) ---
+    J = [Ubig[i] * J⊥[i] for i in 1:k]
+    A = [Ubig[i] * A⊥[i] for i in 1:k]
+
+    # --- STAGE 2: factorize (same as jive, now on full-size J and A) ---
+    Fj = svd(stack(J))
+    S  = Fj.Vt[1:r, :]
+    Ufull = Fj.U[:, 1:r] * Diagonal(Fj.S[1:r])
+    pis_full = [size(Ji, 1) for Ji in J]
+    U = Matrix{T_}[]; idx = 1
+    for pᵢ in pis_full
+        push!(U, Ufull[idx:idx+pᵢ-1, :]); idx += pᵢ
+    end
+    Si = Matrix{T_}[]; Wi = Matrix{T_}[]
+    for i in 1:k
+        Fi = svd(A[i]); rri = ri[i]
+        push!(Si, Fi.Vt[1:rri, :])
+        push!(Wi, Fi.U[:, 1:rri] * Diagonal(Fi.S[1:rri]))
+    end
+
+    return JiveResult{T_}(J, A, S, U, Si, Wi, r, ri)
+end
