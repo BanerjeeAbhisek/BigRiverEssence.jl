@@ -1,7 +1,7 @@
 module BigRiverSchneider
 
 
-using LinearAlgebra, Statistics   
+using LinearAlgebra, Statistics, Random
 
 include("pca.jl")
 export pca, pcaStructure, pca_transform, pca_invtransform

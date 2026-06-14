@@ -462,24 +462,56 @@ end
 
 
 
-using LinearAlgebra, Statistics, Random
+# ============================================================================
+# jive_rjive — replicates r.jive exactly.
+#
+# THREE functions below:
+#   1. _jive_rjive_core   — internal. The actual JIVE computation (your validated
+#                            algorithm). Takes already-preprocessed data + ranks.
+#   2. _jive_perm_ranks   — internal. Estimates ranks via permutation test
+#                            (r.jive's method="perm") when you don't supply them.
+#   3. jive_rjive         — THE FUNCTION YOU CALL. Preprocesses, then either uses
+#                            your given ranks or estimates them, then runs the core.
+#
+# USAGE:
+#   jive_rjive(Xs, r, ri)   → given ranks  (identical to the validated version)
+#   jive_rjive(Xs)          → auto ranks   (permutation, like r.jive's default)
+# ============================================================================
+
+# --- robust SVD (mirrors r.jive's svdwrapper: fall back if fast routine fails) ---
+function safe_svd(A)
+    try
+        return svd(A)
+    catch e
+        e isa LinearAlgebra.LAPACKException || rethrow()
+        return svd(A; alg = LinearAlgebra.QRIteration())
+    end
+end
+
+function safe_svdvals(A)
+    try
+        return svdvals(A)
+    catch e
+        e isa LinearAlgebra.LAPACKException || rethrow()
+        return svdvals(A; alg = LinearAlgebra.QRIteration())
+    end
+end
 
 # ============================================================================
-# INTERNAL CORE — your exact jive_rjive algorithm, taking PREPROCESSED data Xc
-# and ranks. This is byte-for-byte your validated computation (from SVD-reduction
-# onward). Not called directly by the user.
+# (1) INTERNAL CORE — the JIVE computation. Not called directly by you.
+#     Takes preprocessed data Xc (already centered + scaled) and ranks.
 # ============================================================================
 function _jive_rjive_core(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::Vector{Int};
                           conv::Float64, maxiter::Int)
     T_ = Float64
     k = length(Xc)
 
-    # --- SVD-reduction (est=TRUE): reduce each block to ΛVᵀ, keep U to map back ---
+    # SVD-reduction (est=TRUE): reduce each block to ΛVᵀ, keep U to map back
     Ubig = Vector{Matrix{T_}}(undef, k)
     Xr   = Vector{Matrix{T_}}(undef, k)
     for i in 1:k
         if size(Xc[i],1) > size(Xc[i],2)
-            F = svd(Xc[i]); nc = size(Xc[i], 2)
+            F = safe_svd(Xc[i]); nc = size(Xc[i], 2)
             Xr[i] = Diagonal(F.S[1:nc]) * F.Vt[1:nc, :]
             Ubig[i] = F.U[:, 1:nc]
         else
@@ -496,7 +528,7 @@ function _jive_rjive_core(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::Vecto
         out
     end
 
-    # --- jive.iter on the reduced data ---
+    # alternating estimation loop (jive.iter)
     A = [zeros(T_, pis[i], n) for i in 1:k]
     J = [zeros(T_, pis[i], n) for i in 1:k]
     Vind = [zeros(T_, n, ri[i]) for i in 1:k]
@@ -507,9 +539,10 @@ function _jive_rjive_core(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::Vecto
     while nrun < maxiter && !converged
         Jlast = copy(Jtot); Alast = copy(Atot)
 
+        # joint: rank-r SVD of (Xtot - Atot)
         if r > 0
             tmp = Xtot .- Atot
-            s = svd(tmp)
+            s = safe_svd(tmp)
             Jtot = s.U[:,1:r] * Diagonal(s.S[1:r]) * s.Vt[1:r,:]
             V = s.Vt[1:r,:]'
         else
@@ -517,6 +550,7 @@ function _jive_rjive_core(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::Vecto
         end
         J = rowblocks(Jtot)
 
+        # individual: project away from joint AND other individuals
         for i in 1:k
             if ri[i] > 0
                 tmp = (Xr[i] .- J[i]) * (I - V*V')
@@ -526,7 +560,7 @@ function _jive_rjive_core(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::Vecto
                         tmp = tmp * (I - Vind[j]*Vind[j]')
                     end
                 end
-                s = svd(tmp)
+                s = safe_svd(tmp)
                 Vind[i] = s.Vt[1:ri[i], :]'
                 A[i] = s.U[:,1:ri[i]] * Diagonal(s.S[1:ri[i]]) * s.Vt[1:ri[i],:]
             else
@@ -534,6 +568,7 @@ function _jive_rjive_core(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::Vecto
             end
         end
 
+        # first-iteration re-orthogonalization (r.jive's nrun==0 block)
         if nrun == 0
             for i in 1:k, j in 1:k
                 j == i && continue
@@ -541,7 +576,7 @@ function _jive_rjive_core(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::Vecto
             end
             for i in 1:k
                 if ri[i] > 0
-                    s = svd(A[i]); Vind[i] = s.Vt[1:ri[i], :]'
+                    s = safe_svd(A[i]); Vind[i] = s.Vt[1:ri[i], :]'
                 end
             end
         end
@@ -553,10 +588,12 @@ function _jive_rjive_core(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::Vecto
         nrun += 1
     end
 
-    # --- map back & factorize ---
+    # map reduced J, A back to full variable space
     Jfull = [Ubig[i] * J[i] for i in 1:k]
     Afull = [Ubig[i] * A[i] for i in 1:k]
-    Fj = svd(reduce(vcat, Jfull))
+
+    # factorize (paper §3.1)
+    Fj = safe_svd(reduce(vcat, Jfull))
     S = Fj.Vt[1:r, :]
     pis_full = [size(Ji,1) for Ji in Jfull]
     Ufull = Fj.U[:,1:r] * Diagonal(Fj.S[1:r])
@@ -564,7 +601,7 @@ function _jive_rjive_core(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::Vecto
     for p in pis_full; push!(U, Ufull[idx:idx+p-1,:]); idx+=p; end
     Si = Matrix{T_}[]; Wi = Matrix{T_}[]
     for i in 1:k
-        Fi = svd(Afull[i])
+        Fi = safe_svd(Afull[i])
         push!(Si, Fi.Vt[1:ri[i], :])
         push!(Wi, Fi.U[:,1:ri[i]] * Diagonal(Fi.S[1:ri[i]]))
     end
@@ -572,8 +609,8 @@ function _jive_rjive_core(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::Vecto
 end
 
 # ============================================================================
-# PERMUTATION RANK SELECTION (r.jive's jive.perm) — estimates (r, ri) from
-# preprocessed data when ranks aren't supplied.
+# (2) INTERNAL PERMUTATION RANK SELECTION (r.jive's jive.perm).
+#     Estimates (r, ri) from preprocessed data. Not called directly by you.
 # ============================================================================
 function _jive_perm_ranks(Xc::Vector{Matrix{Float64}}, n::Int;
                           nperm::Int, alpha::Float64, conv::Float64,
@@ -589,12 +626,12 @@ function _jive_perm_ranks(Xc::Vector{Matrix{Float64}}, n::Int;
 
         # joint rank: individual removed, permute columns within each block
         full = [Xc[i] .- Aperp[i] for i in 1:k]
-        actual = svdvals(reduce(vcat, full))
+        actual = safe_svdvals(reduce(vcat, full))
         nsv = min(n, sum(size(X,1) for X in Xc))
         perms = zeros(nperm, nsv)
         for p in 1:nperm
             permuted = [full[i][:, randperm(n)] for i in 1:k]
-            sv = svdvals(reduce(vcat, permuted))
+            sv = safe_svdvals(reduce(vcat, permuted))
             perms[p, 1:min(length(sv),nsv)] = sv[1:min(length(sv),nsv)]
         end
         rJ = 0
@@ -606,7 +643,7 @@ function _jive_perm_ranks(Xc::Vector{Matrix{Float64}}, n::Int;
         # individual ranks: joint removed, permute within each row
         for i in 1:k
             ind = Xc[i] .- Jperp[i]
-            actual_i = svdvals(ind)
+            actual_i = safe_svdvals(ind)
             nsv_i = min(n, size(ind,1))
             perms_i = zeros(nperm, nsv_i)
             for p in 1:nperm
@@ -614,7 +651,7 @@ function _jive_perm_ranks(Xc::Vector{Matrix{Float64}}, n::Int;
                 for row in 1:size(ind,1)
                     permuted[row, :] = ind[row, randperm(n)]
                 end
-                sv = svdvals(permuted)
+                sv = safe_svdvals(permuted)
                 perms_i[p, 1:min(length(sv),nsv_i)] = sv[1:min(length(sv),nsv_i)]
             end
             ra = 0
@@ -626,7 +663,7 @@ function _jive_perm_ranks(Xc::Vector{Matrix{Float64}}, n::Int;
 
         current = vcat(rJ, rA)
 
-        # refit at new ranks (to update Jperp/Aperp) if ranks changed
+        # refit at new ranks to update Jperp/Aperp, if ranks changed
         if last != current && rJ > 0
             fit = _jive_rjive_core(Xc, n, rJ, rA; conv=conv, maxiter=maxiter)
             Jperp = fit.J; Aperp = fit.A
@@ -637,9 +674,8 @@ function _jive_perm_ranks(Xc::Vector{Matrix{Float64}}, n::Int;
 end
 
 # ============================================================================
-# PUBLIC jive_rjive
-#   - ranks GIVEN  → identical to your validated version (method="given")
-#   - ranks OMITTED → estimates them by permutation (r.jive's method="perm")
+# (3) PUBLIC jive_rjive — THE FUNCTION YOU CALL.
+#     Does preprocessing, picks ranks (given or estimated), runs the core.
 # ============================================================================
 function jive_rjive(Xs::Vector{<:AbstractMatrix};
                     r = nothing, ri = nothing,
@@ -650,7 +686,7 @@ function jive_rjive(Xs::Vector{<:AbstractMatrix};
     n = size(Xs[1], 2)
     all(size(X,2) == n for X in Xs) || throw(ArgumentError("all datasets need the same number of columns"))
 
-    # preprocessing: center + r.jive scaling (norm * sqrt(sum_n)) — exactly as before
+    # preprocessing: center by row mean + r.jive scaling (norm * sqrt(sum_n))
     nel = [size(X,1)*size(X,2) for X in Xs]; sum_n = sum(nel)
     Xc = Vector{Matrix{Float64}}(undef, k)
     for i in 1:k
@@ -660,7 +696,7 @@ function jive_rjive(Xs::Vector{<:AbstractMatrix};
     end
     conv = tol === nothing ? 1e-6 * norm(reduce(vcat, Xc)) : tol
 
-    # estimate ranks if not supplied (r.jive's default behavior)
+    # estimate ranks if not supplied (r.jive's default method="perm")
     if r === nothing || ri === nothing
         println("Estimating ranks via permutation test...")
         r, ri = _jive_perm_ranks(Xc, n; nperm=nperm, alpha=alpha, conv=conv, maxiter=maxiter)
@@ -670,6 +706,6 @@ function jive_rjive(Xs::Vector{<:AbstractMatrix};
     return _jive_rjive_core(Xc, n, r, ri; conv=conv, maxiter=maxiter)
 end
 
-# positional form: jive_rjive(Xs, r, ri; ...) — identical behavior to your current function
+# positional form: jive_rjive(Xs, r, ri; ...) — for when ranks are known
 jive_rjive(Xs::Vector{<:AbstractMatrix}, r::Int, ri::Vector{Int}; kwargs...) =
     jive_rjive(Xs; r=r, ri=ri, kwargs...)
