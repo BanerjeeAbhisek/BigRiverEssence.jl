@@ -20,9 +20,8 @@ function safe_svd!(A)
     end
 end
 
-# ============================================================================
-# (1) OPTIMIZED CORE
-# ============================================================================
+
+# (1) OPTIMIZED CORE — Algorithm 1, with preallocated buffers and in-place BLAS
 function _jive_rjive_core_opt2(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::Vector{Int};
                                conv::Float64, maxiter::Int)
     T_ = Float64
@@ -67,7 +66,7 @@ function _jive_rjive_core_opt2(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::
     while nrun < maxiter && !converged
         copyto!(Jlast, Jtot); copyto!(Alast, Atot)
 
-        # --- joint: rank-r SVD of (Xtot - Atot) ---
+        #  joint: rank-r SVD of (Xtot - Atot) 
         if r > 0
             @. tmpJ = Xtot - Atot
             s = safe_svd!(tmpJ)                          # in-place input (tmpJ rewritten next iter)
@@ -75,13 +74,13 @@ function _jive_rjive_core_opt2(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::
             @views mul!(Jtot, USj, s.Vt[1:r,:])
             @views copyto!(V, transpose(s.Vt[1:r,:]))
         else
-            fill!(Jtot, 0)
+            fill!(Jtot, 0.0)
         end
         for i in 1:k
             @views J[i] .= Jtot[rowranges[i], :]
         end
 
-        # --- individual: project ⟂ joint and ⟂ other individuals, then SVD ---
+        #  individual: project ⟂ joint and ⟂ other individuals, then SVD 
         for i in 1:k
             if ri[i] > 0
                 tmp = tmpi[i]
@@ -150,9 +149,9 @@ function _jive_rjive_core_opt2(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::
     return JiveResult{T_}(Jfull, Afull, S, U, Si, Wi, r, ri)
 end
 
-# ============================================================================
-# (2) OPTIMIZED PERMUTATION RANK SELECTION
-# ============================================================================
+
+# (2) OPTIMIZED PERMUTATION RANK SELECTION — Algorithm 2, with preallocated buffers and in-place BLAS
+
 function _jive_perm_ranks_opt(Xc::Vector{Matrix{Float64}}, n::Int;
                               nperm::Int, alpha::Float64, conv::Float64,
                               maxiter::Int, maxrounds::Int = 10)
@@ -170,7 +169,7 @@ function _jive_perm_ranks_opt(Xc::Vector{Matrix{Float64}}, n::Int;
     while last != current && nrun < maxrounds
         last = copy(current)
 
-        # ----- joint rank: individual removed, permute columns within each block -----
+        #  joint rank: individual removed, permute columns within each block 
         full = [Xc[i] .- Aperp[i] for i in 1:k]
         actual = safe_svdvals(reduce(vcat, full))
         nsv = min(n, ptot)
@@ -192,7 +191,7 @@ function _jive_perm_ranks_opt(Xc::Vector{Matrix{Float64}}, n::Int;
         end
         rJ = max(rJ, last[1])
 
-        # ----- individual ranks: joint removed, permute within each row -----
+        #  individual ranks: joint removed, permute within each row 
         for i in 1:k
             ind = Xc[i] .- Jperp[i]
             pi_ = size(ind, 1)
@@ -228,9 +227,8 @@ function _jive_perm_ranks_opt(Xc::Vector{Matrix{Float64}}, n::Int;
     return rJ, rA
 end
 
-# ============================================================================
-# (3) OPTIMIZED PUBLIC WRAPPER
-# ============================================================================
+
+# (3) OPTIMIZED PUBLIC WRAPPER — user-facing function, with optional rank estimation via permutation test.
 function jive_rjive_opt(Xs::Vector{<:AbstractMatrix};
                         r = nothing, ri = nothing,
                         scale = true, center = true, tol = nothing,

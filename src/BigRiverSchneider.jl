@@ -15,6 +15,9 @@ export  plskern, Plsr, plskerncoef, plskernpredict, plskerntransform
 include("jive.jl") 
 export  JiveResult, jive, jive_fast, jive_rjive
 
+include("splsda.jl")
+export SplsdaResult, splsda
+
 
 
 

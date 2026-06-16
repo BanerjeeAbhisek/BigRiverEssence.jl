@@ -4,12 +4,6 @@
 # products, in-place broadcasts, BLAS.ger! for rank-1 deflation.
 
 
-# ============================================================================
-# HELPERS
-# ============================================================================
-
-# soft-thresholding scalar  S(a,Δ) = sign(a)·(|a|-Δ)₊   (unchanged, used elsewhere)
-#soft(a, delta) = sign(a) * max(abs(a) - delta, zero(a))
 
 # ‖a - b‖ without allocating the difference vector
 function norm_diff(a, b)
@@ -42,9 +36,8 @@ function finding_v!(v, s, z, c)
     return v
 end
 
-# ============================================================================
-# ONE SPARSE COMPONENT (deflation variant) — Algorithm 3
-# ============================================================================
+
+# ONE SPARSE COMPONENT (deflation variant) — Algorithm 3, with preallocated buffers and in-place BLAS
 function spca_component_opt(X, c; tol = 1e-6, maxiter = 500)
     n, p = size(X)
     T = eltype(X)
@@ -75,9 +68,7 @@ function spca_component_opt(X, c; tol = 1e-6, maxiter = 500)
     return d, u, v
 end
 
-# ============================================================================
-# SPARSE PCA via deflation (Algorithm 2)
-# ============================================================================
+# SPARSE PCA via deflation (Algorithm 2) — with preallocated buffers and in-place BLAS
 function pmd_opt(X; k = 2, c = sqrt(size(X, 2)) / 2, standardize = false,
                  tol = 1e-6, maxiter = 500)
     n, p = size(X)
@@ -104,9 +95,7 @@ function pmd_opt(X; k = 2, c = sqrt(size(X, 2)) / 2, standardize = false,
     return pcaStructure{T}(T.(means), T.(sigma), V, vars, vars ./ total)
 end
 
-# ============================================================================
-# ONE SPARSE COMPONENT (orthogonal-u variant) — Section 3.2
-# ============================================================================
+# ONE SPARSE COMPONENT (orthogonal-u variant) — Section 3.2, with preallocated buffers and in-place BLAS
 function spca_component_orth_opt(X, c, U_prev; tol = 1e-6, maxiter = 500)
     n, p = size(X)
     T = eltype(X)
@@ -142,9 +131,8 @@ function spca_component_orth_opt(X, c, U_prev; tol = 1e-6, maxiter = 500)
     return d, u, v
 end
 
-# ============================================================================
-# SPARSE PCA with orthogonal u's (Section 3.2) — no deflation
-# ============================================================================
+
+# SPARSE PCA with orthogonal u's (Section 3.2) — no deflation, with preallocated buffers and in-place BLAS
 function pmd_orth_opt(X; k = 2, c = sqrt(size(X, 2)) / 2, standardize = false,
                       tol = 1e-6, maxiter = 500)
     n, p = size(X)
