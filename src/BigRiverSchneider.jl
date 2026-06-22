@@ -18,9 +18,8 @@ export  JiveResult, jive, jive_fast, jive_rjive
 include("splsda.jl")
 export SplsdaResult, splsda
 
-
-
-
+include("cca.jl")
+export CcaResult, cca, cca_transform
 
 
 
@@ -41,5 +40,9 @@ export jive_rjive_opt
 
 include("splsda_opt.jl")
 export splsda_opt
+
+include("cca_opt.jl")
+export cca_opt
+
 
 end 
