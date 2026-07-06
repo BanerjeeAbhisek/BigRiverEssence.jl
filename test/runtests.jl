@@ -2,7 +2,7 @@
 
 using MultivariateStats: MultivariateStats
 const MVS = MultivariateStats
-using BigRiverSchneider
+using BigRiverEssence
 using Test
 using LinearAlgebra, Statistics, Random, DelimitedFiles
 
@@ -22,7 +22,7 @@ const tol_julia = 1e-5
 const tol_r     = 1e-3
 # ─────────────────────────────────────────────────────────────────────────────
 
-@testset "BigRiverSchneider.jl" begin
+@testset "BigRiverEssence.jl" begin
 	@testset "Utility" begin
 		include("utils.jl")
 	end

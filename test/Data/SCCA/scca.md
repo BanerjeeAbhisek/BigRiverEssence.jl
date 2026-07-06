@@ -1,6 +1,6 @@
 # SCCA reference fixtures (`scca.R`)
 
-The `scca.R` is used in context of testing the outputs of `scca` function of `BigRiverSchneider.jl` with the outputs of the original R implementation of `PMA::CCA`. It produces all the simulated data matrices and outputs of `PMA::CCA` which are used in `scca_test.jl` to test similarity of outputs with `PMA::CCA`.
+The `scca.R` is used in context of testing the outputs of `scca` function of `BigRiverEssence.jl` with the outputs of the original R implementation of `PMA::CCA`. It produces all the simulated data matrices and outputs of `PMA::CCA` which are used in `scca_test.jl` to test similarity of outputs with `PMA::CCA`.
 
 ## It performs the following tasks:
 

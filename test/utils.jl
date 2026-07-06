@@ -1,5 +1,5 @@
 @testset "internal: SignConsistency_opt! (largest-|entry| made positive)" begin
-	_signfix = BigRiverSchneider.SignConsistency_opt!
+	_signfix = BigRiverEssence.SignConsistency_opt!
 
 	# column whose largest-magnitude entry is negative ⇒ whole column flips
 	V = reshape([1.0, -3.0, 2.0], 3, 1)

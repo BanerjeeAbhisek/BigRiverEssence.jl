@@ -174,14 +174,14 @@ end
 
 # ---------------------------------------------------------------------------
 # Internal-helper tests. These exercise the building blocks of the PMD iteration
-# directly (via BigRiverSchneider._name) so a regression in a primitive is caught
+# directly (via BigRiverEssence._name) so a regression in a primitive is caught
 # at the source, not just as a downstream symptom in the full fit.
 # ---------------------------------------------------------------------------
 
 @testset "internal: _pmd_soft (soft-threshold operator)" begin
 	# The L1 proximal operator S(a,λ) = sign(a)·max(|a|−λ, 0): shrink toward zero by
 	# λ, snap to zero once |a| ≤ λ. This is the single primitive that creates sparsity.
-	soft = BigRiverSchneider._pmd_soft
+	soft = BigRiverEssence._pmd_soft
 	@test soft(5.0, 2.0) == 3.0          # shrink by λ
 	@test soft(-5.0, 2.0) == -3.0         # sign preserved through the shrink
 	@test soft(1.0, 2.0) == 0.0          # |a| ≤ λ ⇒ snapped to exactly 0
@@ -197,7 +197,7 @@ end
 @testset "internal: _pmd_l2n (guarded L2 norm)" begin
 	# Euclidean norm, but with PMA's zero-guard: an all-zero vector returns 0.05
 	# instead of 0, so the later normalization steps never divide by zero.
-	l2n = BigRiverSchneider._pmd_l2n
+	l2n = BigRiverEssence._pmd_l2n
 	@test l2n([3.0, 4.0]) == 5.0
 	@test l2n(zeros(5)) == 0.05         # the guard: 0 would blow up a downstream /‖·‖
 	a = randn(50)
@@ -208,9 +208,9 @@ end
 	# The quantity the L1 budget actually constrains is the ratio ‖a‖₁/‖a‖₂, which
 	# ranges from 1 (one nonzero) to √m (all equal). l1_norm computes it; the _soft
 	# variant computes it for a soft-thresholded vector without materializing it.
-	l1n  = BigRiverSchneider._pmd_l1_norm
-	l1ns = BigRiverSchneider._pmd_l1_norm_soft
-	soft = BigRiverSchneider._pmd_soft
+	l1n  = BigRiverEssence._pmd_l1_norm
+	l1ns = BigRiverEssence._pmd_l1_norm_soft
+	soft = BigRiverEssence._pmd_soft
 	@test l1n([3.0, 4.0]) ≈ 7 / 5         # (3+4) / 5
 	@test l1n(ones(9)) ≈ 3.0           # 9 / 3 = √9, the dense maximum
 	@test l1n(zeros(4)) == 0.0          # 0 / 0.05 guard ⇒ 0 (no NaN)
@@ -224,7 +224,7 @@ end
 
 @testset "internal: _pmd_l1diff (L1 distance)" begin
 	# ‖a−b‖₁, the convergence metric between successive iterates.
-	l1diff = BigRiverSchneider._pmd_l1diff
+	l1diff = BigRiverEssence._pmd_l1diff
 	@test l1diff([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == 0.0     # identical ⇒ 0
 	@test l1diff([1.0, 0.0], [0.0, 1.0]) == 2.0               # |1-0|+|0-1|
 	a = randn(40);
@@ -236,9 +236,9 @@ end
 	# Given a target L1 budget, bisection finds the threshold λ such that the
 	# soft-thresholded vector hits that budget. The contract: 0 when already within
 	# budget, positive and bounded when over, and monotone in the budget.
-	bs   = BigRiverSchneider._pmd_binary_search
-	l1n  = BigRiverSchneider._pmd_l1_norm
-	l1ns = BigRiverSchneider._pmd_l1_norm_soft
+	bs   = BigRiverEssence._pmd_binary_search
+	l1n  = BigRiverEssence._pmd_l1_norm
+	l1ns = BigRiverEssence._pmd_l1_norm_soft
 	# Already within budget ⇒ nothing to threshold ⇒ λ = 0.
 	a = ones(4)                            # l1_norm = 2.0
 	@test l1n(a) ≈ 2.0
@@ -259,8 +259,8 @@ end
 @testset "internal: _pmd_soft_normalize! (soft-threshold then unit-normalize)" begin
 	# The fused update used each iteration: soft-threshold into a buffer, then scale
 	# to unit L2 norm. Done in place to avoid allocating per iteration.
-	sn   = BigRiverSchneider._pmd_soft_normalize!
-	soft = BigRiverSchneider._pmd_soft
+	sn   = BigRiverEssence._pmd_soft_normalize!
+	soft = BigRiverEssence._pmd_soft
 	arg  = [3.0, -4.0, 0.5];
 	out  = similar(arg)
 	sn(out, arg, 1.0)                      # soft([3,-4,0.5], 1) = [2,-3,0]; then /‖·‖ = /√13
@@ -285,7 +285,7 @@ end
 	# The iteration is seeded from the leading right singular vectors. _pmd_check_v
 	# computes them via the cheaper of two routes depending on shape, and must return
 	# unit columns equal (up to sign) to svd's V on both tall and wide inputs.
-	cv = BigRiverSchneider._pmd_check_v
+	cv = BigRiverEssence._pmd_check_v
 	# Tall (p ≤ n): goes through the svd(xᵀx) branch (small p×p problem).
 	Random.seed!(21)
 	Xt = randn(60, 40);
@@ -312,8 +312,8 @@ end
 	# The heart of PMD: one rank-1 penalized factor pair, computed by alternating
 	# soft-thresholded power iteration into preallocated buffers. Two checks — at max
 	# budget it must equal the rank-1 SVD; at a binding budget it must be sparse.
-	smd = BigRiverSchneider._pmd_smd!
-	cv  = BigRiverSchneider._pmd_check_v
+	smd = BigRiverEssence._pmd_smd!
+	cv  = BigRiverEssence._pmd_check_v
 	Random.seed!(31)
 	n, p = 50, 40
 	X = randn(n, p);

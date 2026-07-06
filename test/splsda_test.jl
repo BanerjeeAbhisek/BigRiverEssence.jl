@@ -4,13 +4,13 @@
 # Tolerances (tol_ord / tol_julia / tol_r) come from runtests.jl: tol_ord for exact
 # identities, tol_r for the cross-language mixOmics fixtures.
 
-const BRS             = BigRiverSchneider
-const splsda          = BRS.splsda
-const splsdaStructure = BRS.splsdaStructure
-const _cs             = BRS._center_scale
-const _unmap          = BRS._unmap
-const _soft           = BRS._soft_threshold_L1!
-const _sqd            = BRS._sqdiff
+const BRE             = BigRiverEssence
+const splsda          = BRE.splsda
+const splsdaStructure = BRE.splsdaStructure
+const _cs             = BRE._center_scale
+const _unmap          = BRE._unmap
+const _soft           = BRE._soft_threshold_L1!
+const _sqd            = BRE._sqdiff
 
 @testset "output structure & invariants" begin
 	# Basic contract: right type and shapes (note loadings_Y has one row per CLASS,

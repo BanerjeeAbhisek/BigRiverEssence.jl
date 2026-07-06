@@ -5,14 +5,14 @@
 # STRUCTURAL kind of tolerance: orthogonality floors (< 1e-4) — see the notes below
 # on why those are deliberately looser than tol_ord.
 
-const BRS = BigRiverSchneider
-const jive = BRS.jive
-const jiveStructure = BRS.jiveStructure
-const _core = BRS._jive_rjive_core_opt2
-const _perm = BRS._jive_perm_ranks_opt
-const _ssvd = BRS.safe_svd
-const _ssvdv = BRS.safe_svdvals
-const _ssvd! = BRS.safe_svd!
+const BRE = BigRiverEssence
+const jive = BRE.jive
+const jiveStructure = BRE.jiveStructure
+const _core = BRE._jive_rjive_core_opt2
+const _perm = BRE._jive_perm_ranks_opt
+const _ssvd = BRE.safe_svd
+const _ssvdv = BRE.safe_svdvals
+const _ssvd! = BRE.safe_svd!
 
 # Mirror jive's own preprocessing: row-center each block, then apply r.jive's
 # Frobenius scaling (divide by ‖block‖·√(total elements)). Reproduced here so the

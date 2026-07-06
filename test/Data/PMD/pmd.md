@@ -1,6 +1,6 @@
 # PMD reference fixtures (`pmd.R`)
 
-The `pmd.R` is used in context of testing the outputs of `pmd` function of `BigRiverSchneider.jl` with the outputs of the original R implementation of `PMA::PMD`. It produces all the simulated data matrices and outputs of `PMA::PMD` which are used in `pmd_test.jl` to test similarity of outputs with `PMA::PMD`.
+The `pmd.R` is used in context of testing the outputs of `pmd` function of `BigRiverEssence.jl` with the outputs of the original R implementation of `PMA::PMD`. It produces all the simulated data matrices and outputs of `PMA::PMD` which are used in `pmd_test.jl` to test similarity of outputs with `PMA::PMD`.
 
 ## It performs the following tasks:
 

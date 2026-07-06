@@ -1,6 +1,6 @@
 # SPLSDA reference fixtures (`splsda.R`)
 
-The `splsda.R` is used in context of testing the outputs of `splsda` function of `BigRiverSchneider.jl` with the outputs of the original R implementation `mixOmics::splsda`. It produces all the simulated data matrices and outputs of `mixOmics::splsda` which are used in `splsda_test.jl` to test similarity of outputs with `mixOmics::splsda`.
+The `splsda.R` is used in context of testing the outputs of `splsda` function of `BigRiverEssence.jl` with the outputs of the original R implementation `mixOmics::splsda`. It produces all the simulated data matrices and outputs of `mixOmics::splsda` which are used in `splsda_test.jl` to test similarity of outputs with `mixOmics::splsda`.
 
 ## It performs the following tasks:
 

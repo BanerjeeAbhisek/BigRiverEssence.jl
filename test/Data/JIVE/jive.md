@@ -1,6 +1,6 @@
 # JIVE reference fixtures (`jive.R`)
 
-The `jive.R` is used in context of testing the outputs of `jive` function of `BigRiverSchneider.jl` with the outputs of the original R implementation  `r.jive`. It produces all the simulated data matrices and outputs of `r.jive` which are used in `jive_test.jl` to test similarity of outputs with `r.jive`.
+The `jive.R` is used in context of testing the outputs of `jive` function of `BigRiverEssence.jl` with the outputs of the original R implementation  `r.jive`. It produces all the simulated data matrices and outputs of `r.jive` which are used in `jive_test.jl` to test similarity of outputs with `r.jive`.
 
 ## It performs the following tasks:
 

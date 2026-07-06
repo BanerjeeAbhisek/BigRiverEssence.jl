@@ -161,7 +161,7 @@ end
 
 @testset "internal: l1_diff (L1 distance)" begin
 	# ‖a−b‖₁, the convergence metric between successive loading iterates.
-	l1d = BigRiverSchneider.l1_diff
+	l1d = BigRiverEssence.l1_diff
 	@test l1d([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == 0.0       # identical ⇒ 0
 	@test l1d([1.0, 0.0], [0.0, 1.0]) == 2.0
 	a = randn(40);
@@ -173,7 +173,7 @@ end
 	# The core sparsifier: given a raw direction z and a budget c, find the threshold
 	# so the soft-thresholded, then L2-normalized, vector has L1 norm = c. The contract:
 	# unit L2, L1 hits c (when binding), signs inherited from z, small entries zeroed.
-	fv = BigRiverSchneider.finding_v!
+	fv = BigRiverEssence.finding_v!
 	p = 60
 	Random.seed!(2)
 	z = randn(p);
@@ -230,7 +230,7 @@ end
 	# The SVD-based initialization. init_rsv computes the top-k right singular vectors
 	# via the cheaper route for the shape — eigen(XᵀX) when tall, eigen(XXᵀ) + back-
 	# projection when wide — and must equal svd's V (up to sign) on both.
-	irsv = BigRiverSchneider.init_rsv
+	irsv = BigRiverEssence.init_rsv
 	# Tall (p ≤ n): the eigen(XᵀX) branch (small p×p problem).
 	Random.seed!(21)
 	Xt = randn(60, 40);
@@ -259,7 +259,7 @@ end
 	# needs the (VᵀV)⁻¹ term: ‖Xc·Vk·(VkᵀVk)⁻¹·Vkᵀ‖²_F / ‖Xc‖²_F. The implementation
 	# uses a cheaper trace rewrite of this; this test proves the rewrite is exact by
 	# comparing to the explicit projection form, using a deliberately NON-orthonormal V.
-	pve = BigRiverSchneider.prop_var_explained
+	pve = BigRiverEssence.prop_var_explained
 	Random.seed!(33)
 	n, p, K = 50, 40, 4
 	Xc = randn(n, p) .- mean(randn(n, p), dims = 1)
@@ -289,8 +289,8 @@ end
 	# The deflation core: one rank-1 sparse loading by soft-thresholded power iteration
 	# into preallocated buffers. Two checks — max budget must give the rank-1 SVD, a
 	# binding budget must give a sparse loading.
-	sc = BigRiverSchneider.spca_component!
-	irsv = BigRiverSchneider.init_rsv
+	sc = BigRiverEssence.spca_component!
+	irsv = BigRiverEssence.init_rsv
 	Random.seed!(31)
 	n, p = 50, 40
 	X = randn(n, p);
@@ -324,8 +324,8 @@ end
 	# against the previously-found ones (U_prev) so the scores come out orthogonal.
 	# Check that with no prior scores it matches the ordinary core, and with one prior
 	# score the new one is orthogonal to it — the defining property of the orth variant.
-	sco = BigRiverSchneider.spca_component_orth!
-	irsv = BigRiverSchneider.init_rsv
+	sco = BigRiverEssence.spca_component_orth!
+	irsv = BigRiverEssence.init_rsv
 	Random.seed!(37)
 	n, p = 60, 40
 	X = randn(n, p);

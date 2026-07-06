@@ -1,6 +1,6 @@
 # SPC reference fixtures (`spc.R`)
 
-The `spc.R` is used in context of testing the outputs of `spc` function of `BigRiverSchneider.jl` with the outputs of the original R implementation of `PMA::SPC`. It produces all the simulated data matrices and outputs of `PMA::SPC` which are used in `spc_test.jl` to test similarity of outputs with `PMA::SPC`.
+The `spc.R` is used in context of testing the outputs of `spc` function of `BigRiverEssence.jl` with the outputs of the original R implementation of `PMA::SPC`. It produces all the simulated data matrices and outputs of `PMA::SPC` which are used in `spc_test.jl` to test similarity of outputs with `PMA::SPC`.
 
 ## It performs the following tasks:
 

@@ -11,13 +11,13 @@
 # sign: the MVS check uses the tight tol_ord, with projections compared
 # sign-invariantly (column-wise |·|) and correlations directly (they're sign-free).
 
-const BRS           = BigRiverSchneider
-const cca           = BRS.cca
-const cca_transform = BRS.cca_transform
-const ccaStructure  = BRS.ccaStructure
-const _svdcca       = BRS._cca_svd_opt
-const _covcca       = BRS._cca_cov_opt
-const _qnorm        = BRS._qnormalize!
+const BRE           = BigRiverEssence
+const cca           = BRE.cca
+const cca_transform = BRE.cca_transform
+const ccaStructure  = BRE.ccaStructure
+const _svdcca       = BRE._cca_svd_opt
+const _covcca       = BRE._cca_cov_opt
+const _qnorm        = BRE._qnormalize!
 
 # Largest per-column abs-difference between two projection matrices. Canonical
 # directions are eigenvectors, so their per-column sign is arbitrary — comparing

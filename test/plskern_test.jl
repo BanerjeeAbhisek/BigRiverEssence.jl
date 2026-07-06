@@ -8,12 +8,12 @@
 # n×1 matrix via reshape(y, :, 1); no defensive copy is needed since nothing is
 # written back through it.
 
-const BRS              = BigRiverSchneider
-const plskern          = BRS.plskern
-const plskerncoef      = BRS.plskerncoef
-const plskernpredict   = BRS.plskernpredict
-const plskerntransform = BRS.plskerntransform
-const plskernStructure = BRS.plskernStructure
+const BRE              = BigRiverEssence
+const plskern          = BRE.plskern
+const plskerncoef      = BRE.plskerncoef
+const plskernpredict   = BRE.plskernpredict
+const plskerntransform = BRE.plskerntransform
+const plskernStructure = BRE.plskernStructure
 
 const HAS_JCHEMO = let
 	try

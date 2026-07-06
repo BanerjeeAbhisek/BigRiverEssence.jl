@@ -7,16 +7,16 @@
 # (X is dx×n). PMA uses the opposite (obs in rows), so the fixture/ground-truth
 # tests transpose to convert between the two layouts — watch for Matrix(transpose(·)).
 
-const BRS           = BigRiverSchneider
-const scca          = BRS.scca
-const sccaStructure = BRS.sccaStructure
-const _soft         = BRS._softcca!
-const _l2           = BRS._l2n_val
-const _l1n          = BRS._l1_of_norm
-const _l1ns         = BRS._l1_of_norm_soft
-const _l1d          = BRS._l1diff
-const _bsearch      = BRS._binary_search_opt
-const _msqrt        = BRS._matsqrt
+const BRE           = BigRiverEssence
+const scca          = BRE.scca
+const sccaStructure = BRE.sccaStructure
+const _soft         = BRE._softcca!
+const _l2           = BRE._l2n_val
+const _l1n          = BRE._l1_of_norm
+const _l1ns         = BRE._l1_of_norm_soft
+const _l1d          = BRE._l1diff
+const _bsearch      = BRE._binary_search_opt
+const _msqrt        = BRE._matsqrt
 
 @testset "output structure & invariants" begin
 	# Basic contract: type, shapes, recorded penalties, and the sCCA properties —
@@ -192,7 +192,7 @@ end
 	# the obs×obs space rather than the huge feature space. _fast_init_v returns the
 	# leading left singular vectors of zᵀ·(xxᵀ)^½ — orthonormal columns living in z's
 	# feature space, the starting point for the sparse iteration.
-	_fiv = BRS._fast_init_v
+	_fiv = BRE._fast_init_v
 	Random.seed!(13)
 	nobs = 30;
 	p1 = 60;
@@ -204,7 +204,7 @@ end
 	@test size(V) == (p2, K)                       # init for v lives in z's feature space
 	@test V' * V ≈ I(K) atol = tol_ord             # orthonormal (it's an SVD U factor)
 	# Matches the documented construction exactly: U of svd(zᵀ · (xxᵀ)^½).
-	xx_sqrt = BRS._matsqrt(x * transpose(x))
+	xx_sqrt = BRE._matsqrt(x * transpose(x))
 	Vref = svd(transpose(z)*xx_sqrt).U[:, 1:K]
 	for k in 1:K
 		@test abs(dot(V[:, k], Vref[:, k])) > 1 - tol_ord  # equal up to per-column sign
@@ -216,7 +216,7 @@ end
 	# soft-thresholded power iteration into caller-owned buffers. We plant a shared
 	# latent so there's real structure to find, standardize exactly as scca does, and
 	# check unit-norm, sparsity, the d-return identity, correlation, and selection.
-	sccacore = BRS._sparse_cca_single_opt!
+	sccacore = BRE._sparse_cca_single_opt!
 	Random.seed!(17)
 	nobs       = 100;
 	p1         = 40;
