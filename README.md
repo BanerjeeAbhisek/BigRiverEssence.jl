@@ -1,6 +1,10 @@
 # BigRiverEssence
 
-Paste here CI, codecov, MIT License, Stable, Pkg Status
+
+[![CI](https://github.com/senresearch/BigRiverEssence.jl/actions/workflows/ci.yml/badge.svg)](https://github.com/senresearch/BigRiverEssence.jl/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/senresearch/BigRiverEssence.jl/branch/main/graph/badge.svg?token=uHM6utUQoi)](https://codecov.io/gh/senresearch/BigRiverEssence.jl)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://senresearch.github.io/BigRiverEssence.jl/stable)
+[![Pkg Status](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
 
 ## Description
