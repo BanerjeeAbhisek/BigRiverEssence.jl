@@ -1,7 +1,6 @@
 # Library
 
 using MultivariateStats: MultivariateStats
-const MVS = MultivariateStats
 using BigRiverEssence
 using Test
 using LinearAlgebra, Statistics, Random, DelimitedFiles

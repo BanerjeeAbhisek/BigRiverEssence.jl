@@ -11,13 +11,12 @@
 # sign: the MVS check uses the tight tol_ord, with projections compared
 # sign-invariantly (column-wise |·|) and correlations directly (they're sign-free).
 
-const BRE           = BigRiverEssence
-const cca           = BRE.cca
-const cca_transform = BRE.cca_transform
-const ccaStructure  = BRE.ccaStructure
-const _svdcca       = BRE._cca_svd_opt
-const _covcca       = BRE._cca_cov_opt
-const _qnorm        = BRE._qnormalize!
+
+
+
+
+
+
 
 # Largest per-column abs-difference between two projection matrices. Canonical
 # directions are eigenvectors, so their per-column sign is arbitrary — comparing
@@ -32,9 +31,9 @@ projdiff(A, B) = maximum(norm(abs.(@view A[:, j]) .- abs.(@view B[:, j])) for j 
 	X = randn(dx, n);
 	Y = randn(dy, n)         # variables × observations
 	p = min(dx, dy)                            # at most min(dx,dy) canonical pairs
-	M = cca(X, Y; method = :svd)
+	M = BigRiverEssence.cca(X, Y; method = :svd)
 
-	@test M isa ccaStructure
+	@test M isa BigRiverEssence.ccaStructure
 	@test length(M.xmean) == dx && length(M.ymean) == dy   # one mean per variable
 	@test size(M.xproj) == (dx, p)             # dx variables × p canonical directions
 	@test size(M.yproj) == (dy, p)
@@ -51,7 +50,7 @@ end
 	Random.seed!(2)
 	X = randn(6, 300);
 	Y = randn(5, 300)
-	M = cca(X, Y; method = :svd, outdim = 3)
+	M = BigRiverEssence.cca(X, Y; method = :svd, outdim = 3)
 	@test length(M.corrs) == 3
 	@test size(M.xproj, 2) == 3 && size(M.yproj, 2) == 3
 end
@@ -65,13 +64,13 @@ end
 	z = randn(1, n)                                       # the single shared latent
 	X = randn(dx, 1) * z .+ 0.05 .* randn(dx, n)         # X = (loading)·z + noise
 	Y = randn(dy, 1) * z .+ 0.05 .* randn(dy, n)         # Y shares the same z
-	M = cca(X, Y; method = :svd)
+	M = BigRiverEssence.cca(X, Y; method = :svd)
 	@test M.corrs[1] > 0.99                       # leading correlation ≈ 1 (the shared z)
 	@test M.corrs[2] < 0.5                        # nothing else is shared ⇒ rest small
 	# And the leading canonical variates actually realize that correlation when we
 	# project the data and correlate the two sides' first variate.
-	Zx = cca_transform(M, X, :x)
-	Zy = cca_transform(M, Y, :y)
+	Zx = BigRiverEssence.cca_transform(M, X, :x)
+	Zy = BigRiverEssence.cca_transform(M, Y, :y)
 	@test isapprox(abs(cor(Zx[1, :], Zy[1, :])), M.corrs[1]; atol = tol_ord)
 end
 
@@ -86,15 +85,15 @@ end
 	sh = randn(2, n);
 	X[1:2, :] .+= sh;
 	Y[1:2, :] .+= sh   # plant 2 shared dimensions
-	M = cca(X, Y; method = :svd)
-	Zx = cca_transform(M, X, :x)
-	Zy = cca_transform(M, Y, :y)
+	M = BigRiverEssence.cca(X, Y; method = :svd)
+	Zx = BigRiverEssence.cca_transform(M, X, :x)
+	Zy = BigRiverEssence.cca_transform(M, Y, :y)
 	@test size(Zx) == (length(M.corrs), n)        # variates: components × observations
 	# Each canonical-variate pair correlates at the reported canonical correlation.
 	for j in 1:length(M.corrs)
 		@test isapprox(abs(cor(Zx[j, :], Zy[j, :])), M.corrs[j]; atol = tol_ord)
 	end
-	@test_throws ArgumentError cca_transform(M, X, :z)   # component must be :x or :y
+	@test_throws ArgumentError BigRiverEssence.cca_transform(M, X, :z)   # component must be :x or :y
 end
 
 @testset ":svd and :cov agree (internal consistency)" begin
@@ -108,8 +107,8 @@ end
 	sh = randn(2, n);
 	X[1:2, :] .+= sh;
 	Y[1:2, :] .+= sh
-	Ms = cca(X, Y; method = :svd)
-	Mc = cca(X, Y; method = :cov)
+	Ms = BigRiverEssence.cca(X, Y; method = :svd)
+	Mc = BigRiverEssence.cca(X, Y; method = :cov)
 	@test norm(sort(Ms.corrs) .- sort(Mc.corrs)) < tol_ord
 end
 
@@ -119,10 +118,10 @@ end
 	Random.seed!(0)
 	X = randn(6, 100);
 	Y = randn(5, 100)
-	@test_throws DimensionMismatch cca(X, randn(5, 80))       # X has 100 cols, Y has 80
-	@test_throws ArgumentError cca(X, Y; outdim = 0)          # outdim must be ≥ 1
-	@test_throws ArgumentError cca(X, Y; outdim = 6)          # outdim > min(dx,dy)=5
-	@test_throws ArgumentError cca(X, Y; method = :bogus)     # method must be :svd or :cov
+	@test_throws DimensionMismatch BigRiverEssence.cca(X, randn(5, 80))       # X has 100 cols, Y has 80
+	@test_throws ArgumentError BigRiverEssence.cca(X, Y; outdim = 0)          # outdim must be ≥ 1
+	@test_throws ArgumentError BigRiverEssence.cca(X, Y; outdim = 6)          # outdim > min(dx,dy)=5
+	@test_throws ArgumentError BigRiverEssence.cca(X, Y; method = :bogus)     # method must be :svd or :cov
 end
 
 # ----------------------------------------------------------------------------
@@ -139,7 +138,7 @@ end
 	Craw = randn(d, d);
 	C = Craw * Craw' + I        # a symmetric positive-definite metric
 	P = randn(d, p)
-	_qnorm(P, C)
+	BigRiverEssence._qnormalize!(P, C)
 	for j in 1:p
 		@test isapprox(dot(@view(P[:, j]), C * @view(P[:, j])), 1.0; atol = tol_ord)   # pⱼᵀ C pⱼ = 1
 	end
@@ -158,8 +157,8 @@ end
 	Y[1:2, :] .+= sh
 	xm = vec(mean(X, dims = 2));
 	ym = vec(mean(Y, dims = 2))
-	M = _svdcca(copy(X) .- xm, copy(Y) .- ym, xm, ym, min(dx, dy))   # pass pre-centered data
-	@test M isa ccaStructure
+	M = BigRiverEssence._cca_svd_opt(copy(X) .- xm, copy(Y) .- ym, xm, ym, min(dx, dy))   # pass pre-centered data
+	@test M isa BigRiverEssence.ccaStructure
 	@test issorted(M.corrs; rev = true)
 	@test all(0 .<= M.corrs .<= 1 + tol_ord)
 	@test M.nobs == n                               # the SVD path records the sample size
@@ -185,7 +184,7 @@ end
 		Cxx = (Zx * Zx') ./ (n - 1)                 # build the covariances the solver expects
 		Cyy = (Zy * Zy') ./ (n - 1)
 		Cxy = (Zx * Zy') ./ (n - 1)
-		M = _covcca(Cxx, Cyy, Cxy, xm, ym, k)
+		M = BigRiverEssence._cca_cov_opt(Cxx, Cyy, Cxy, xm, ym, k)
 		@test length(M.corrs) == k
 		@test all(0 .<= M.corrs .<= 1 + tol_ord)
 		@test issorted(M.corrs; rev = true)
@@ -213,13 +212,13 @@ end
 		X[1:nsh, :] .+= sh;
 		Y[1:nsh, :] .+= sh   # plant shared structure
 
-		ref = MVS.fit(MVS.CCA, X, Y; method = :svd)
-		rc  = MVS.correlations(ref)
-		rPx = MVS.xprojection(ref);
-		rPy = MVS.yprojection(ref)
+		ref = MultivariateStats.fit(MultivariateStats.CCA, X, Y; method = :svd)
+		rc  = MultivariateStats.correlations(ref)
+		rPx = MultivariateStats.xprojection(ref);
+		rPy = MultivariateStats.yprojection(ref)
 
 		for meth in (:svd, :cov)
-			M = cca(X, Y; method = meth)
+			M = BigRiverEssence.cca(X, Y; method = meth)
 			# Correlations are sign-free and it's a pure-Julia eigenproblem, so they
 			# match to machine precision (sorted, since tie ordering can differ).
 			@test norm(sort(M.corrs) .- sort(rc)) < tol_ord

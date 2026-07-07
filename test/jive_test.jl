@@ -5,14 +5,12 @@
 # STRUCTURAL kind of tolerance: orthogonality floors (< 1e-4) — see the notes below
 # on why those are deliberately looser than tol_ord.
 
-const BRE = BigRiverEssence
-const jive = BRE.jive
-const jiveStructure = BRE.jiveStructure
-const _core = BRE._jive_rjive_core_opt2
-const _perm = BRE._jive_perm_ranks_opt
-const _ssvd = BRE.safe_svd
-const _ssvdv = BRE.safe_svdvals
-const _ssvd! = BRE.safe_svd!
+
+
+
+
+
+
 
 # Mirror jive's own preprocessing: row-center each block, then apply r.jive's
 # Frobenius scaling (divide by ‖block‖·√(total elements)). Reproduced here so the
@@ -80,9 +78,9 @@ end
 	# Basic contract: right type, one J and one A block per input, correct shapes,
 	# and the joint scores S have orthonormal ROWS (S Sᵀ = I) — S is the shared basis.
 	d = make_data()
-	m = jive([d.X1, d.X2], d.rT, [d.r1T, d.r2T])
+	m = BigRiverEssence.jive([d.X1, d.X2], d.rT, [d.r1T, d.r2T])
 
-	@test m isa jiveStructure
+	@test m isa BigRiverEssence.jiveStructure
 	@test length(m.J) == 2 && length(m.A) == 2
 	@test size(m.J[1]) == (d.p1, d.n) && size(m.J[2]) == (d.p2, d.n)
 	@test size(m.A[1]) == (d.p1, d.n) && size(m.A[2]) == (d.p2, d.n)
@@ -99,7 +97,7 @@ end
 	# each individual block EXACTLY rank ri. We check the first dropped singular value
 	# is negligible relative to the largest — i.e. the rank cliff is sharp.
 	d = make_data()
-	m = jive([d.X1, d.X2], d.rT, [d.r1T, d.r2T])
+	m = BigRiverEssence.jive([d.X1, d.X2], d.rT, [d.r1T, d.r2T])
 	sJ = svdvals(reduce(vcat, m.J))
 	@test sJ[d.rT+1] / sJ[1] < tol_ord          # σ_{r+1}/σ₁ ≈ 0 ⇒ stacked joint is rank r
 	for (i, ri) in enumerate([d.r1T, d.r2T])
@@ -109,14 +107,14 @@ end
 end
 
 @testset "joint ⊥ individual (orthogonality constraint)" begin
-	# The whole point of JIVE: joint and individual structure are ORTHOGONAL, so
+	# The whole point of BigRiverEssence.jive: joint and individual structure are ORTHOGONAL, so
 	# variation isn't double-counted. We check both the row-space orthogonality
 	# (Jstack ⊥ each A) and the score-space orthogonality (S ⊥ each Si).
-	# The < 1e-4 floor (NOT tol_ord) is structural: r.jive's orthIndiv enforces this
+	# The < 1e-4 floor (NOT tol_ord) is structural: r.BigRiverEssence.jive's orthIndiv enforces this
 	# orthogonality only APPROXIMATELY via alternating projection, so it converges to
 	# ~1e-4, never machine zero. Tightening this would fail on a correct fit.
 	d = make_data()
-	m = jive([d.X1, d.X2], d.rT, [d.r1T, d.r2T])
+	m = BigRiverEssence.jive([d.X1, d.X2], d.rT, [d.r1T, d.r2T])
 	Jstack = reduce(vcat, m.J)
 	for i in 1:2
 		@test norm(Jstack * m.A[i]') / (norm(Jstack) * norm(m.A[i])) < 1e-4   # joint ⊥ individual
@@ -144,7 +142,7 @@ end
 	X1c = U1*S + W1*S1;
 	X2c = U2*S + W2*S2                # clean, noiseless data
 
-	m = jive([X1c, X2c], rT, [r1T, r2T]; scale = false)
+	m = BigRiverEssence.jive([X1c, X2c], rT, [r1T, r2T]; scale = false)
 	Jstack = reduce(vcat, m.J)
 	for i in 1:2
 		@test norm(Jstack * m.A[i]') / (norm(Jstack) * norm(m.A[i])) < 1e-4   # still orthogonal
@@ -160,7 +158,7 @@ end
 	# well-separated structured data it must recover the planted (2, [3,3]).
 	s = make_struct()
 	Random.seed!(999)                                    # fix RNG: the permutation test is stochastic
-	m = jive([s.X1, s.X2]; nperm = 100)
+	m = BigRiverEssence.jive([s.X1, s.X2]; nperm = 100)
 	@test m.r == 2                                        # joint rank
 	@test m.ri == [3, 3]                                 # individual ranks
 end
@@ -169,8 +167,8 @@ end
 	# jive(Xs, r, ri) and jive(Xs; r=, ri=) are two spellings of the same call — the
 	# positional form just forwards to the keyword one, so results must be identical.
 	d = make_data()
-	a = jive([d.X1, d.X2], d.rT, [d.r1T, d.r2T])
-	b = jive([d.X1, d.X2]; r = d.rT, ri = [d.r1T, d.r2T])
+	a = BigRiverEssence.jive([d.X1, d.X2], d.rT, [d.r1T, d.r2T])
+	b = BigRiverEssence.jive([d.X1, d.X2]; r = d.rT, ri = [d.r1T, d.r2T])
 	for i in 1:2
 		@test a.J[i] ≈ b.J[i]
 		@test a.A[i] ≈ b.A[i]
@@ -193,7 +191,7 @@ end
 	Random.seed!(0)
 	X1 = randn(20, 50);
 	X2 = randn(15, 40)               # 50 vs 40 columns — incompatible
-	@test_throws ArgumentError jive([X1, X2], 2, [2, 2])
+	@test_throws ArgumentError BigRiverEssence.jive([X1, X2], 2, [2, 2])
 end
 
 # ----------------------------------------------------------------------------
@@ -207,12 +205,12 @@ end
 	# the factorization, and return the same singular values. safe_svd! mutates input.
 	Random.seed!(7)
 	A = randn(40, 25)
-	F = _ssvd(A)
+	F = BigRiverEssence.safe_svd(A)
 	@test F.U * Diagonal(F.S) * F.Vt ≈ A                  # factorization reconstructs A
-	@test _ssvdv(A) ≈ svdvals(A)                          # singular values match Base
+	@test BigRiverEssence.safe_svdvals(A) ≈ svdvals(A)                          # singular values match Base
 	@test F.S ≈ svdvals(A)
 	Acopy = copy(A)                                       # safe_svd! overwrites its argument,
-	F2 = _ssvd!(Acopy)                                    # so pass a copy to keep A intact
+	F2 = BigRiverEssence.safe_svd!(Acopy)                                    # so pass a copy to keep A intact
 	@test F2.U * Diagonal(F2.S) * F2.Vt ≈ A
 end
 
@@ -223,8 +221,8 @@ end
 	d = make_data()
 	Xc = _preprocess([d.X1, d.X2])
 	conv = 1e-6 * norm(reduce(vcat, Xc))                  # same convergence threshold jive uses
-	m = _core(Xc, d.n, d.rT, [d.r1T, d.r2T]; conv = conv, maxiter = 1000)
-	@test m isa jiveStructure
+	m = BigRiverEssence._jive_rjive_core_opt2(Xc, d.n, d.rT, [d.r1T, d.r2T]; conv = conv, maxiter = 1000)
+	@test m isa BigRiverEssence.jiveStructure
 	@test m.r == d.rT && m.ri == [d.r1T, d.r2T]
 	sJ = svdvals(reduce(vcat, m.J))
 	@test sJ[d.rT+1] / sJ[1] < tol_ord                  # joint is exactly rank r
@@ -239,7 +237,7 @@ end
 	Xc = _preprocess([s.X1, s.X2])
 	conv = 1e-6 * norm(reduce(vcat, Xc))
 	Random.seed!(999)
-	rJ, rA = _perm(Xc, s.n; nperm = 100, alpha = 0.05, conv = conv, maxiter = 1000)
+	rJ, rA = BigRiverEssence._jive_perm_ranks_opt(Xc, s.n; nperm = 100, alpha = 0.05, conv = conv, maxiter = 1000)
 	@test rJ == 2
 	@test rA == [3, 3]
 end
@@ -279,7 +277,7 @@ end
 		r1T = Int(meta[3]);
 		r2T = Int(meta[4])
 
-		m = jive([X1, X2], rT, [r1T, r2T])
+		m = BigRiverEssence.jive([X1, X2], rT, [r1T, r2T])
 
 		# First confirm OUR preprocessing reproduces r.jive's scaled input — if this
 		# diverged, every downstream comparison would fail for the wrong reason.
@@ -314,7 +312,7 @@ end
 		rA_r = Int.(ranks[2:end])
 
 		Random.seed!(999)
-		m = jive([X1s, X2s]; nperm = 100)
+		m = BigRiverEssence.jive([X1s, X2s]; nperm = 100)
 
 		# Print both sides' ranks — handy when eyeballing a run, and harmless if they match.
 		println("  Julia : joint=$(m.r)  indiv=$(m.ri)")

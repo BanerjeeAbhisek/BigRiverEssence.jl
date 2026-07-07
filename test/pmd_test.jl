@@ -181,89 +181,78 @@ end
 @testset "internal: _pmd_soft (soft-threshold operator)" begin
 	# The L1 proximal operator S(a,λ) = sign(a)·max(|a|−λ, 0): shrink toward zero by
 	# λ, snap to zero once |a| ≤ λ. This is the single primitive that creates sparsity.
-	soft = BigRiverEssence._pmd_soft
-	@test soft(5.0, 2.0) == 3.0          # shrink by λ
-	@test soft(-5.0, 2.0) == -3.0         # sign preserved through the shrink
-	@test soft(1.0, 2.0) == 0.0          # |a| ≤ λ ⇒ snapped to exactly 0
-	@test soft(-1.0, 2.0) == 0.0
-	@test soft(3.0, 0.0) == 3.0          # λ=0 is the identity (no shrink)
-	@test soft(0.0, 1.0) == 0.0          # sign(0)=0 ⇒ 0, and crucially no NaN
+	@test BigRiverEssence._pmd_soft(5.0, 2.0) == 3.0          # shrink by λ
+	@test BigRiverEssence._pmd_soft(-5.0, 2.0) == -3.0         # sign preserved through the shrink
+	@test BigRiverEssence._pmd_soft(1.0, 2.0) == 0.0          # |a| ≤ λ ⇒ snapped to exactly 0
+	@test BigRiverEssence._pmd_soft(-1.0, 2.0) == 0.0
+	@test BigRiverEssence._pmd_soft(3.0, 0.0) == 3.0          # λ=0 is the identity (no shrink)
+	@test BigRiverEssence._pmd_soft(0.0, 1.0) == 0.0          # sign(0)=0 ⇒ 0, and crucially no NaN
 	# Must match the closed form elementwise — not just on the hand-picked cases.
 	a = randn(100);
 	λ = 0.7
-	@test soft.(a, λ) ≈ sign.(a) .* max.(abs.(a) .- λ, 0.0)
+	@test BigRiverEssence._pmd_soft.(a, λ) ≈ sign.(a) .* max.(abs.(a) .- λ, 0.0)
 end
 
 @testset "internal: _pmd_l2n (guarded L2 norm)" begin
 	# Euclidean norm, but with PMA's zero-guard: an all-zero vector returns 0.05
 	# instead of 0, so the later normalization steps never divide by zero.
-	l2n = BigRiverEssence._pmd_l2n
-	@test l2n([3.0, 4.0]) == 5.0
-	@test l2n(zeros(5)) == 0.05         # the guard: 0 would blow up a downstream /‖·‖
+	@test BigRiverEssence._pmd_l2n([3.0, 4.0]) == 5.0
+	@test BigRiverEssence._pmd_l2n(zeros(5)) == 0.05         # the guard: 0 would blow up a downstream /‖·‖
 	a = randn(50)
-	@test l2n(a) ≈ norm(a)                # identical to the true norm whenever nonzero
+	@test BigRiverEssence._pmd_l2n(a) ≈ norm(a)                # identical to the true norm whenever nonzero
 end
 
 @testset "internal: _pmd_l1_norm & _pmd_l1_norm_soft (L1/L2 ratio)" begin
 	# The quantity the L1 budget actually constrains is the ratio ‖a‖₁/‖a‖₂, which
 	# ranges from 1 (one nonzero) to √m (all equal). l1_norm computes it; the _soft
 	# variant computes it for a soft-thresholded vector without materializing it.
-	l1n  = BigRiverEssence._pmd_l1_norm
-	l1ns = BigRiverEssence._pmd_l1_norm_soft
-	soft = BigRiverEssence._pmd_soft
-	@test l1n([3.0, 4.0]) ≈ 7 / 5         # (3+4) / 5
-	@test l1n(ones(9)) ≈ 3.0           # 9 / 3 = √9, the dense maximum
-	@test l1n(zeros(4)) == 0.0          # 0 / 0.05 guard ⇒ 0 (no NaN)
+	@test BigRiverEssence._pmd_l1_norm([3.0, 4.0]) ≈ 7 / 5         # (3+4) / 5
+	@test BigRiverEssence._pmd_l1_norm(ones(9)) ≈ 3.0           # 9 / 3 = √9, the dense maximum
+	@test BigRiverEssence._pmd_l1_norm(zeros(4)) == 0.0          # 0 / 0.05 guard ⇒ 0 (no NaN)
 	# The soft-then-ratio shortcut must equal applying soft first, then the ratio.
 	a = randn(80);
 	λ = 0.5
-	@test l1ns(a, λ) ≈ l1n(soft.(a, λ))
+	@test BigRiverEssence._pmd_l1_norm_soft(a, λ) ≈ BigRiverEssence._pmd_l1_norm(BigRiverEssence._pmd_soft.(a, λ))
 	# The ratio is ≥ 1 for any nonzero vector (Cauchy–Schwarz lower bound).
-	@test l1n(randn(30)) >= 1 - tol_ord
+	@test BigRiverEssence._pmd_l1_norm(randn(30)) >= 1 - tol_ord
 end
 
 @testset "internal: _pmd_l1diff (L1 distance)" begin
 	# ‖a−b‖₁, the convergence metric between successive iterates.
-	l1diff = BigRiverEssence._pmd_l1diff
-	@test l1diff([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == 0.0     # identical ⇒ 0
-	@test l1diff([1.0, 0.0], [0.0, 1.0]) == 2.0               # |1-0|+|0-1|
+	@test BigRiverEssence._pmd_l1diff([1.0, 2.0, 3.0], [1.0, 2.0, 3.0]) == 0.0     # identical ⇒ 0
+	@test BigRiverEssence._pmd_l1diff([1.0, 0.0], [0.0, 1.0]) == 2.0               # |1-0|+|0-1|
 	a = randn(40);
 	b = randn(40)
-	@test l1diff(a, b) ≈ sum(abs, a .- b)
+	@test BigRiverEssence._pmd_l1diff(a, b) ≈ sum(abs, a .- b)
 end
 
 @testset "internal: _pmd_binary_search (λ solving the L1 budget)" begin
 	# Given a target L1 budget, bisection finds the threshold λ such that the
 	# soft-thresholded vector hits that budget. The contract: 0 when already within
 	# budget, positive and bounded when over, and monotone in the budget.
-	bs   = BigRiverEssence._pmd_binary_search
-	l1n  = BigRiverEssence._pmd_l1_norm
-	l1ns = BigRiverEssence._pmd_l1_norm_soft
 	# Already within budget ⇒ nothing to threshold ⇒ λ = 0.
 	a = ones(4)                            # l1_norm = 2.0
-	@test l1n(a) ≈ 2.0
-	@test bs(a, 3.0) == 0.0                # target 3 ≥ current 2 ⇒ no thresholding
-	@test bs(zeros(6), 1.0) == 0.0         # all-zero input ⇒ 0 (nothing to do)
+	@test BigRiverEssence._pmd_l1_norm(a) ≈ 2.0
+	@test BigRiverEssence._pmd_binary_search(a, 3.0) == 0.0                # target 3 ≥ current 2 ⇒ no thresholding
+	@test BigRiverEssence._pmd_binary_search(zeros(6), 1.0) == 0.0         # all-zero input ⇒ 0 (nothing to do)
 	# Over budget ⇒ a positive λ that drives the soft ratio down to the target.
 	Random.seed!(3)
 	z = randn(60)
-	@test l1n(z) > 3.0                     # confirm thresholding is genuinely needed
-	λ = bs(z, 3.0)
+	@test BigRiverEssence._pmd_l1_norm(z) > 3.0                     # confirm thresholding is genuinely needed
+	λ = BigRiverEssence._pmd_binary_search(z, 3.0)
 	@test λ > 0
 	@test λ <= maximum(abs, z)             # λ never exceeds the largest |coefficient|
-	@test isapprox(l1ns(z, λ), 3.0; atol = tol_r)   # the found λ actually hits the budget (to search precision)
+	@test isapprox(BigRiverEssence._pmd_l1_norm_soft(z, λ), 3.0; atol = tol_r)   # the found λ actually hits the budget (to search precision)
 	# Monotone: a tighter (smaller) budget requires a larger threshold.
-	@test bs(z, 2.0) >= bs(z, 4.0)
+	@test BigRiverEssence._pmd_binary_search(z, 2.0) >= BigRiverEssence._pmd_binary_search(z, 4.0)
 end
 
 @testset "internal: _pmd_soft_normalize! (soft-threshold then unit-normalize)" begin
 	# The fused update used each iteration: soft-threshold into a buffer, then scale
 	# to unit L2 norm. Done in place to avoid allocating per iteration.
-	sn   = BigRiverEssence._pmd_soft_normalize!
-	soft = BigRiverEssence._pmd_soft
 	arg  = [3.0, -4.0, 0.5];
 	out  = similar(arg)
-	sn(out, arg, 1.0)                      # soft([3,-4,0.5], 1) = [2,-3,0]; then /‖·‖ = /√13
+	BigRiverEssence._pmd_soft_normalize!(out, arg, 1.0)                      # soft([3,-4,0.5], 1) = [2,-3,0]; then /‖·‖ = /√13
 	@test out ≈ [2.0, -3.0, 0.0] ./ sqrt(13)
 	@test isapprox(norm(out), 1.0; atol = tol_ord)  # result is unit-norm when anything survives
 	@test sign.(out) == sign.([2.0, -3.0, 0.0])   # signs carry through unchanged
@@ -271,13 +260,13 @@ end
 	a = randn(50);
 	o = similar(a);
 	λ = 0.6
-	sn(o, a, λ)
-	s = soft.(a, λ)
+	BigRiverEssence._pmd_soft_normalize!(o, a, λ)
+	s = BigRiverEssence._pmd_soft.(a, λ)
 	@test o ≈ s ./ norm(s)
 	# If λ thresholds EVERYTHING away, the guard (0.05) prevents 0/0 — output is all
 	# zeros, no NaN. This is the degenerate case the zero-guard exists for.
 	o2 = similar(a);
-	sn(o2, a, maximum(abs, a) + 1.0)
+	BigRiverEssence._pmd_soft_normalize!(o2, a, maximum(abs, a) + 1.0)
 	@test all(iszero, o2)
 end
 
@@ -285,12 +274,11 @@ end
 	# The iteration is seeded from the leading right singular vectors. _pmd_check_v
 	# computes them via the cheaper of two routes depending on shape, and must return
 	# unit columns equal (up to sign) to svd's V on both tall and wide inputs.
-	cv = BigRiverEssence._pmd_check_v
 	# Tall (p ≤ n): goes through the svd(xᵀx) branch (small p×p problem).
 	Random.seed!(21)
 	Xt = randn(60, 40);
 	K = 3
-	Vt = cv(Xt, K)
+	Vt = BigRiverEssence._pmd_check_v(Xt, K)
 	@test size(Vt) == (40, K)
 	Ft = svd(Xt)
 	for k in 1:K
@@ -299,7 +287,7 @@ end
 	end
 	# Wide (p > n): goes through the svd(xxᵀ) branch, then back-projects to p-space.
 	Xw = randn(30, 50)
-	Vw = cv(Xw, K)
+	Vw = BigRiverEssence._pmd_check_v(Xw, K)
 	@test size(Vw) == (50, K)
 	Fw = svd(Xw)
 	for k in 1:K
@@ -312,20 +300,18 @@ end
 	# The heart of PMD: one rank-1 penalized factor pair, computed by alternating
 	# soft-thresholded power iteration into preallocated buffers. Two checks — at max
 	# budget it must equal the rank-1 SVD; at a binding budget it must be sparse.
-	smd = BigRiverEssence._pmd_smd!
-	cv  = BigRiverEssence._pmd_check_v
 	Random.seed!(31)
 	n, p = 50, 40
 	X = randn(n, p);
 	Xc = X .- mean(X)
-	v0 = cv(Xc, 1)[:, 1]                   # SVD-based starting v
+	v0 = BigRiverEssence._pmd_check_v(Xc, 1)[:, 1]                   # SVD-based starting v
 	u = Vector{Float64}(undef, n);
 	v = Vector{Float64}(undef, p)
 	vold = Vector{Float64}(undef, p)
 	argu = Vector{Float64}(undef, n);
 	argv = Vector{Float64}(undef, p)
 	# Max budget (√n, √p): no penalty binds ⇒ pure power iteration ⇒ rank-1 SVD.
-	d = smd(Xc, v0, sqrt(n), sqrt(p), 50, u, v, vold, argu, argv)
+	d = BigRiverEssence._pmd_smd!(Xc, v0, sqrt(n), sqrt(p), 50, u, v, vold, argu, argv)
 	F = svd(Xc)
 	@test isapprox(norm(u), 1.0; atol = tol_julia)
 	@test isapprox(norm(v), 1.0; atol = tol_julia)
@@ -340,7 +326,7 @@ end
 	vo2 = similar(vold)
 	au2 = similar(argu);
 	av2 = similar(argv)
-	smd(Xc, v0, 0.4 * sqrt(n), 0.4 * sqrt(p), 50, u2, v2, vo2, au2, av2)
+	BigRiverEssence._pmd_smd!(Xc, v0, 0.4 * sqrt(n), 0.4 * sqrt(p), 50, u2, v2, vo2, au2, av2)
 	@test count(!iszero, v2) < p
 	@test count(!iszero, u2) < n
 end

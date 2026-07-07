@@ -8,12 +8,12 @@
 # n×1 matrix via reshape(y, :, 1); no defensive copy is needed since nothing is
 # written back through it.
 
-const BRE              = BigRiverEssence
-const plskern          = BRE.plskern
-const plskerncoef      = BRE.plskerncoef
-const plskernpredict   = BRE.plskernpredict
-const plskerntransform = BRE.plskerntransform
-const plskernStructure = BRE.plskernStructure
+
+
+
+
+
+
 
 const HAS_JCHEMO = let
 	try
@@ -31,9 +31,9 @@ HAS_JCHEMO || @info "Jchemo not available; cross-implementation tests will be sk
 	n, p, q, nlv = 80, 30, 4, 5
 	X = randn(n, p);
 	Y = randn(n, q)
-	m = plskern(X, Y; nlv = nlv)
+	m = BigRiverEssence.plskern(X, Y; nlv = nlv)
 
-	@test m isa plskernStructure
+	@test m isa BigRiverEssence.plskernStructure
 	@test size(m.W) == (p, nlv)            # weights
 	@test size(m.P) == (p, nlv)            # X loadings
 	@test size(m.Q) == (q, nlv)            # Y loadings
@@ -54,10 +54,10 @@ end
 	# absurd nlv should silently clamp to min(n, p), not error or return garbage.
 	Random.seed!(2)
 	y1 = randn(20)
-	m = plskern(randn(20, 8), reshape(y1, :, 1); nlv = 50)    # ask for 50, p=8
+	m = BigRiverEssence.plskern(randn(20, 8), reshape(y1, :, 1); nlv = 50)    # ask for 50, p=8
 	@test size(m.R, 2) == 8                            # clamped to p (the limiting dim)
 	y2 = randn(6)
-	m2 = plskern(randn(6, 40), reshape(y2, :, 1); nlv = 30)   # ask for 30, n=6
+	m2 = BigRiverEssence.plskern(randn(6, 40), reshape(y2, :, 1); nlv = 30)   # ask for 30, n=6
 	@test size(m2.R, 2) == 6                           # clamped to n this time
 end
 
@@ -68,7 +68,7 @@ end
 	Random.seed!(3)
 	X = randn(100, 25);
 	y = randn(100)
-	m = plskern(X, reshape(y, :, 1); nlv = 10)
+	m = BigRiverEssence.plskern(X, reshape(y, :, 1); nlv = 10)
 	G = m.T' * m.T
 	offdiag = maximum(abs(G[i, j]) for i in 1:10 for j in 1:10 if i != j)
 	@test offdiag < tol_ord                            # off-diagonals ≈ 0 ⇒ orthogonal
@@ -82,7 +82,7 @@ end
 	Random.seed!(4)
 	X = randn(60, 20);
 	Y = randn(60, 3)
-	m = plskern(X, Y; nlv = 6)
+	m = BigRiverEssence.plskern(X, Y; nlv = 6)
 	Xc = (X .- m.xmeans') ./ m.xscales'                # rebuild Xc from X (which the fit left intact)
 	@test m.T ≈ Xc * m.R
 end
@@ -94,13 +94,13 @@ end
 	Random.seed!(5)
 	X = randn(120, 40);
 	Y = randn(120, 2)
-	m1 = plskern(X, Y; nlv = 12, method = :algo1)
-	m2 = plskern(X, Y; nlv = 12, method = :algo2)      # same X, Y reused safely — neither fit mutates them
+	m1 = BigRiverEssence.plskern(X, Y; nlv = 12, method = :algo1)
+	m2 = BigRiverEssence.plskern(X, Y; nlv = 12, method = :algo2)      # same X, Y reused safely — neither fit mutates them
 	@test isapprox(m1.R, m2.R; rtol = tol_ord)
 	@test isapprox(m1.T, m2.T; rtol = tol_ord)
 	@test isapprox(m1.Q, m2.Q; rtol = tol_ord)
-	B1, i1 = plskerncoef(m1);
-	B2, i2 = plskerncoef(m2)
+	B1, i1 = BigRiverEssence.plskerncoef(m1);
+	B2, i2 = BigRiverEssence.plskerncoef(m2)
 	@test isapprox(B1, B2; rtol = tol_ord)             # B has no sign/rotation freedom ⇒ identical
 	@test isapprox(i1, i2; rtol = tol_ord)
 end
@@ -113,8 +113,8 @@ end
 	n, p = 100, 20
 	X = randn(n, p);
 	y = randn(n)
-	m = plskern(X, reshape(y, :, 1); nlv = p)
-	ŷ = vec(plskernpredict(m, X))
+	m = BigRiverEssence.plskern(X, reshape(y, :, 1); nlv = p)
+	ŷ = vec(BigRiverEssence.plskernpredict(m, X))
 	Xc = X .- mean(X, dims = 1)
 	B_ols = Xc \ (y .- mean(y))                            # OLS on the same y the fit used (it stays intact)
 	ŷ_ols = mean(y) .+ Xc * B_ols
@@ -124,7 +124,7 @@ end
 	mY = plskern(X, Y; nlv = p)
 	Yc = Y .- mean(Y, dims = 1)
 	B_olsY = Xc \ Yc
-	@test isapprox(plskernpredict(mY, X), (mean(Y, dims = 1) .+ Xc * B_olsY); rtol = tol_ord)
+	@test isapprox(BigRiverEssence.plskernpredict(mY, X), (mean(Y, dims = 1) .+ Xc * B_olsY); rtol = tol_ord)
 end
 
 @testset "plskerncoef: B and intercept shapes & reconstruction" begin
@@ -135,16 +135,16 @@ end
 	n, p, q = 70, 15, 3
 	X = randn(n, p);
 	Y = randn(n, q)
-	m = plskern(X, Y; nlv = 8)
-	B, intercept = plskerncoef(m)
+	m = BigRiverEssence.plskern(X, Y; nlv = 8)
+	B, intercept = BigRiverEssence.plskerncoef(m)
 	@test size(B) == (p, q)                # one coefficient per (feature, response)
 	@test size(intercept) == (1, q)        # one intercept per response
-	@test plskernpredict(m, X) ≈ intercept .+ X * B    # the two prediction routes agree
+	@test BigRiverEssence.plskernpredict(m, X) ≈ intercept .+ X * B    # the two prediction routes agree
 	# Nested property: asking coef for fewer components must equal a model actually
 	# fit at that smaller nlv — truncation and refitting give the same B.
-	B5, _ = plskerncoef(m; nlv = 5)
-	m5 = plskern(X, Y; nlv = 5)
-	B5b, _ = plskerncoef(m5)
+	B5, _ = BigRiverEssence.plskerncoef(m; nlv = 5)
+	m5 = BigRiverEssence.plskern(X, Y; nlv = 5)
+	B5b, _ = BigRiverEssence.plskerncoef(m5)
 	@test isapprox(B5, B5b; rtol = tol_ord)
 end
 
@@ -155,9 +155,9 @@ end
 	Random.seed!(8)
 	X = randn(50, 12);
 	y = randn(50)
-	m = plskern(X, reshape(y, :, 1); nlv = 6)
-	@test isapprox(plskerntransform(m, X), m.T; rtol = tol_ord)
-	@test isapprox(plskerntransform(m, X; nlv = 3), m.T[:, 1:3]; rtol = tol_ord)
+	m = BigRiverEssence.plskern(X, reshape(y, :, 1); nlv = 6)
+	@test isapprox(BigRiverEssence.plskerntransform(m, X), m.T; rtol = tol_ord)
+	@test isapprox(BigRiverEssence.plskerntransform(m, X; nlv = 3), m.T[:, 1:3]; rtol = tol_ord)
 end
 
 @testset "standardize=true scales X and Y" begin
@@ -167,10 +167,10 @@ end
 	Random.seed!(9)
 	X = randn(60, 10) .* (1:10)';
 	Y = randn(60, 2)     # column j scaled by j
-	m = plskern(X, Y; nlv = 5, standardize = true)
+	m = BigRiverEssence.plskern(X, Y; nlv = 5, standardize = true)
 	@test m.xscales ≈ vec(std(X, dims = 1))            # recorded scales = the real column SDs (X intact)
 	@test m.yscales ≈ vec(std(Y, dims = 1))
-	md = plskern(X, Y; nlv = 5, standardize = false)
+	md = BigRiverEssence.plskern(X, Y; nlv = 5, standardize = false)
 	@test all(md.xscales .== 1.0)                      # off ⇒ scales are all 1
 end
 
@@ -181,8 +181,8 @@ end
 	Random.seed!(10)
 	X = randn(40, 8);
 	y = randn(40)
-	@test_throws MethodError plskern(X, y; nlv = 4)              # vector Y ⇒ no matching method
-	mm = plskern(X, reshape(y, :, 1); nlv = 4)                  # the correct single-response form
+	@test_throws MethodError BigRiverEssence.plskern(X, y; nlv = 4)              # vector Y ⇒ no matching method
+	mm = BigRiverEssence.plskern(X, reshape(y, :, 1); nlv = 4)                  # the correct single-response form
 	@test size(mm.Q) == (1, 4)                                 # one response column
 end
 
@@ -191,7 +191,7 @@ end
 	Random.seed!(0)
 	X = randn(30, 6);
 	y = randn(30)
-	@test_throws ArgumentError plskern(X, reshape(y, :, 1); nlv = 2, method = :bogus)
+	@test_throws ArgumentError BigRiverEssence.plskern(X, reshape(y, :, 1); nlv = 2, method = :bogus)
 end
 
 @testset "matches Jchemo.plskern (live, if available)" begin
@@ -206,15 +206,15 @@ end
 		X = randn(n, p);
 		y = randn(n)
 
-		m_mine    = plskern(X, reshape(y, :, 1); nlv = nlv, method = :algo1)
-		B_mine, _ = plskerncoef(m_mine)
+		m_mine    = BigRiverEssence.plskern(X, reshape(y, :, 1); nlv = nlv, method = :algo1)
+		B_mine, _ = BigRiverEssence.plskerncoef(m_mine)
 
 		mod = Jchemo.plskern(; nlv = nlv)               # Jchemo scal=false ↔ our standardize=false
 		Jchemo.fit!(mod, X, y)                          # X, y are the same arrays our fit used —
 		B_jc = Jchemo.coef(mod).B                       # safe, since plskern doesn't modify them
 
 		@test maximum(abs.(B_mine .- B_jc)) < tol_julia # B is sign-unambiguous ⇒ direct compare
-		ŷ_mine = vec(plskernpredict(m_mine, X))
+		ŷ_mine = vec(BigRiverEssence.plskernpredict(m_mine, X))
 		ŷ_jc   = vec(Jchemo.predict(mod, X).pred)
 		@test maximum(abs.(ŷ_mine .- ŷ_jc)) < tol_julia # predictions also have no sign freedom
 		# Scores match only up to per-column sign — latent factors are sign-ambiguous.
@@ -224,13 +224,13 @@ end
 				T_jc[:, a] ./ norm(T_jc[:, a]))) > 1 - tol_julia
 		end
 		# The algo2 path must agree with Jchemo too (both algorithms, same answer).
-		m2 = plskern(X, reshape(y, :, 1); nlv = nlv, method = :algo2)
-		B2, _ = plskerncoef(m2)
+		m2 = BigRiverEssence.plskern(X, reshape(y, :, 1); nlv = nlv, method = :algo2)
+		B2, _ = BigRiverEssence.plskerncoef(m2)
 		@test maximum(abs.(B2 .- B_jc)) < tol_julia
 		# And the multi-response case cross-checks against Jchemo as well.
 		Y = randn(n, 3)
-		mYmine = plskern(X, Y; nlv = nlv);
-		BYmine, _ = plskerncoef(mYmine)
+		mYmine = BigRiverEssence.plskern(X, Y; nlv = nlv);
+		BYmine, _ = BigRiverEssence.plskerncoef(mYmine)
 		modY = Jchemo.plskern(; nlv = nlv);
 		Jchemo.fit!(modY, X, Y)
 		@test maximum(abs.(BYmine .- Jchemo.coef(modY).B)) < tol_julia

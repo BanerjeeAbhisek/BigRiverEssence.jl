@@ -4,13 +4,9 @@
 # Tolerances (tol_ord / tol_julia / tol_r) come from runtests.jl: tol_ord for exact
 # identities, tol_r for the cross-language mixOmics fixtures.
 
-const BRE             = BigRiverEssence
-const splsda          = BRE.splsda
-const splsdaStructure = BRE.splsdaStructure
-const _cs             = BRE._center_scale
-const _unmap          = BRE._unmap
-const _soft           = BRE._soft_threshold_L1!
-const _sqd            = BRE._sqdiff
+
+
+
 
 @testset "output structure & invariants" begin
 	# Basic contract: right type and shapes (note loadings_Y has one row per CLASS,
@@ -20,9 +16,9 @@ const _sqd            = BRE._sqdiff
 	n, p, ncomp = 60, 100, 2
 	y = repeat(["A", "B", "C"], inner = 20)
 	X = randn(n, p)
-	m = splsda(X, y, ncomp, [10, 10])
+	m = BigRiverEssence.splsda(X, y, ncomp, [10, 10])
 
-	@test m isa splsdaStructure
+	@test m isa BigRiverEssence.splsdaStructure
 	@test size(m.variates_X) == (n, ncomp)        # X scores (sample coordinates)
 	@test size(m.variates_Y) == (n, ncomp)        # Y scores
 	@test size(m.loadings_X) == (p, ncomp)        # sparse X loadings
@@ -47,7 +43,7 @@ end
 	y = repeat(["A", "B"], inner = 25)
 	X = randn(50, 80)
 	for kx in (5, 20, 50)
-		m = splsda(X, y, 1, [kx])
+		m = BigRiverEssence.splsda(X, y, 1, [kx])
 		@test count(!iszero, m.loadings_X[:, 1]) == kx
 	end
 end
@@ -58,7 +54,7 @@ end
 	# row, only 0/1 entries, and column c really is the indicator for class c.
 	Random.seed!(3)
 	y = repeat(["A", "B", "C"], inner = 15)
-	m = splsda(randn(45, 30), y, 1, [5])
+	m = BigRiverEssence.splsda(randn(45, 30), y, 1, [5])
 	@test all(sum(m.Y_dummy, dims = 2) .== 1.0)   # each row has exactly one 1 (one class)
 	@test all(x -> x == 0.0 || x == 1.0, m.Y_dummy)
 	for (c, cls) in enumerate(m.classes)
@@ -80,7 +76,7 @@ end
 	for (ci, cls) in enumerate(classes)
 		X[findall(==(cls), y), 1:10] .+= ci * 2.0     # each class shifts vars 1:10 by a class-specific amount
 	end
-	m = splsda(X, y, 2, [10, 10])
+	m = BigRiverEssence.splsda(X, y, 2, [10, 10])
 
 	# (a) Variable selection: most of the 10 true signal variables are picked up.
 	sel = findall(!iszero, m.loadings_X[:, 1])
@@ -102,8 +98,8 @@ end
 	# for matching an external convention (e.g. lining up with mixOmics' factor levels).
 	Random.seed!(4)
 	y = repeat(["A", "B", "C"], inner = 10)
-	m1 = splsda(randn(30, 20), y, 1, [5])
-	m2 = splsda(randn(30, 20), y, 1, [5]; levels = ["C", "B", "A"])
+	m1 = BigRiverEssence.splsda(randn(30, 20), y, 1, [5])
+	m2 = BigRiverEssence.splsda(randn(30, 20), y, 1, [5]; levels = ["C", "B", "A"])
 	@test m1.classes == ["A", "B", "C"]           # default: sorted
 	@test m2.classes == ["C", "B", "A"]           # custom: as supplied
 	@test m2.Y_dummy[:, 1] == Float64.(y .== "C") # column 1 now tracks "C", per the levels order
@@ -115,9 +111,9 @@ end
 	Random.seed!(0)
 	y = repeat(["A", "B"], inner = 10);
 	X = randn(20, 15)
-	@test_throws ArgumentError splsda(X, y, 2, [5])          # keepX length 1 ≠ ncomp 2
-	@test_throws ArgumentError splsda(X, y, 1, [5]; levels = ["A", "B", "C"])  # 3 levels, 2 classes
-	@test_throws ArgumentError splsda(X, y, 1, [5]; levels = ["A", "Z"])       # "Z" isn't a class
+	@test_throws ArgumentError BigRiverEssence.splsda(X, y, 2, [5])          # keepX length 1 ≠ ncomp 2
+	@test_throws ArgumentError BigRiverEssence.splsda(X, y, 1, [5]; levels = ["A", "B", "C"])  # 3 levels, 2 classes
+	@test_throws ArgumentError BigRiverEssence.splsda(X, y, 1, [5]; levels = ["A", "Z"])       # "Z" isn't a class
 end
 
 # ----------------------------------------------------------------------------
@@ -131,16 +127,16 @@ end
 	# with scale=false they're only centered. Plus the constant-column guard.
 	Random.seed!(5)
 	M = randn(40, 8) .* (1:8)' .+ (1:8)'                        # columns with varied scale + offset
-	Cs = _cs(M; scale = true)
+	Cs = BigRiverEssence._center_scale(M; scale = true)
 	@test all(abs.(vec(mean(Cs, dims = 1))) .< tol_ord)         # every column centered
 	@test all(isapprox.(vec(std(Cs, dims = 1; corrected = true)), 1.0; atol = tol_ord))  # and unit-SD
-	Cc = _cs(M; scale = false)
+	Cc = BigRiverEssence._center_scale(M; scale = false)
 	@test all(abs.(vec(mean(Cc, dims = 1))) .< tol_ord)         # centered…
 	@test !all(isapprox.(vec(std(Cc, dims = 1)), 1.0; atol = tol_ord))   # …but NOT scaled
 	# A constant column has zero SD; dividing by it would give NaN/Inf. The guard sets
 	# such a column to all-zeros instead — a constant carries no discriminative signal.
 	Mz = hcat(randn(20), fill(3.0, 20))
-	Csz = _cs(Mz; scale = true)
+	Csz = BigRiverEssence._center_scale(Mz; scale = true)
 	@test all(isfinite, Csz)                                    # no NaN/Inf from the zero SD
 	@test all(Csz[:, 2] .== 0.0)                                # the constant column zeroed out
 end
@@ -149,15 +145,15 @@ end
 	# The label → indicator-matrix encoder. Default classes are sorted; the rows encode
 	# membership; `levels` reorders the columns; bad levels throw.
 	y = ["B", "A", "C", "A", "B"]
-	Yd, classes = _unmap(y)
+	Yd, classes = BigRiverEssence._unmap(y)
 	@test classes == ["A", "B", "C"]                            # sorted unique labels
 	@test Yd == [0 1 0; 1 0 0; 0 0 1; 1 0 0; 0 1 0]             # each row one-hot for its label
 	# Custom levels permute the columns (so "B" lands in column 2 of THIS ordering).
-	Yd2, classes2 = _unmap(y; levels = ["C", "B", "A"])
+	Yd2, classes2 = BigRiverEssence._unmap(y; levels = ["C", "B", "A"])
 	@test classes2 == ["C", "B", "A"]
 	@test Yd2[1, :] == [0, 1, 0]                                # row 1 is "B" → middle column
-	@test_throws ArgumentError _unmap(y; levels = ["A", "B"])       # too few levels (3 classes)
-	@test_throws ArgumentError _unmap(y; levels = ["A", "B", "Z"])  # "Z" present, "C" missing
+	@test_throws ArgumentError BigRiverEssence._unmap(y; levels = ["A", "B"])       # too few levels (3 classes)
+	@test_throws ArgumentError BigRiverEssence._unmap(y; levels = ["A", "B", "Z"])  # "Z" present, "C" missing
 end
 
 @testset "internal: _soft_threshold_L1! (keeps p−nx largest, zeros nx smallest)" begin
@@ -169,7 +165,7 @@ end
 	absx = similar(x);
 	ord = similar(x, Int);
 	ranks = similar(x, Int)   # preallocated scratch
-	_soft(out, x, 2, absx, ord, ranks)           # drop the 2 smallest (|−0.5|, |1|)
+	BigRiverEssence._soft_threshold_L1!(out, x, 2, absx, ord, ranks)           # drop the 2 smallest (|−0.5|, |1|)
 	@test out[4] == 0.0 && out[3] == 0.0          # those two are zeroed
 	@test all(out[[1, 2, 5]] .!= 0.0)             # the three largest survive
 	@test sign.(out[[1, 2, 5]]) == sign.(x[[1, 2, 5]])   # survivors keep their sign
@@ -179,17 +175,17 @@ end
 	@test out[2] ≈ -(3.0 - 1.0)                   # sign carried through the shrink
 	# nx ≤ 0 means "drop nothing" ⇒ the input copies through unchanged.
 	o2 = similar(x);
-	_soft(o2, x, 0, absx, ord, ranks)
+	BigRiverEssence._soft_threshold_L1!(o2, x, 0, absx, ord, ranks)
 	@test o2 == x
 end
 
 @testset "internal: _sqdiff (squared L2 distance)" begin
 	# Σ(aᵢ−bᵢ)², the convergence metric between successive loading iterates.
-	@test _sqd([1.0, 2.0], [1.0, 2.0]) == 0.0           # identical ⇒ 0
-	@test _sqd([0.0, 0.0], [3.0, 4.0]) == 25.0          # 3²+4²
+	@test BigRiverEssence._sqdiff([1.0, 2.0], [1.0, 2.0]) == 0.0           # identical ⇒ 0
+	@test BigRiverEssence._sqdiff([0.0, 0.0], [3.0, 4.0]) == 25.0          # 3²+4²
 	a = randn(30);
 	b = randn(30)
-	@test _sqd(a, b) ≈ sum(abs2, a .- b)
+	@test BigRiverEssence._sqdiff(a, b) ≈ sum(abs2, a .- b)
 end
 
 # ----------------------------------------------------------------------------
@@ -226,7 +222,7 @@ end
 		ncomp = Int(meta[1]);
 		keepX = [Int(meta[2]), Int(meta[3])]
 
-		m = splsda(X, y, ncomp, keepX; levels = levs)   # levels = levs aligns our class order with R's
+		m = BigRiverEssence.splsda(X, y, ncomp, keepX; levels = levs)   # levels = levs aligns our class order with R's
 
 		for c in 1:ncomp
 			# Loadings/variates match up to per-component sign (each component's SVD

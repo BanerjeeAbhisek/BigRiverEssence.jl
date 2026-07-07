@@ -7,16 +7,12 @@
 # (X is dx×n). PMA uses the opposite (obs in rows), so the fixture/ground-truth
 # tests transpose to convert between the two layouts — watch for Matrix(transpose(·)).
 
-const BRE           = BigRiverEssence
-const scca          = BRE.scca
-const sccaStructure = BRE.sccaStructure
 
-const _l2           = BRE._l2n_val
-const _l1n          = BRE._l1_of_norm
-const _l1ns         = BRE._l1_of_norm_soft
-const _l1d          = BRE._l1diff
-const _bsearch      = BRE._binary_search_opt
-const _msqrt        = BRE._matsqrt
+
+
+
+
+
 
 @testset "output structure & invariants" begin
 	# Basic contract: type, shapes, recorded penalties, and the sCCA properties —
@@ -25,9 +21,9 @@ const _msqrt        = BRE._matsqrt
 	dx, dy, n, K = 40, 30, 100, 2
 	X = randn(dx, n);
 	Y = randn(dy, n)         # variables × observations
-	m = scca(X, Y; penaltyx = 0.3, penaltyz = 0.3, K = K)
+	m = BigRiverEssence.scca(X, Y; penaltyx = 0.3, penaltyz = 0.3, K = K)
 
-	@test m isa sccaStructure
+	@test m isa BigRiverEssence.sccaStructure
 	@test size(m.u) == (dx, K)                 # X canonical vectors, one column per component
 	@test size(m.v) == (dy, K)                 # Y canonical vectors
 	@test length(m.d) == K                     # the per-component weights
@@ -52,8 +48,8 @@ end
 	Random.seed!(2)
 	X = randn(80, 60);
 	Y = randn(70, 60)
-	tight = scca(X, Y; penaltyx = 0.1, penaltyz = 0.1, K = 1)   # small penalty → sparse
-	loose = scca(X, Y; penaltyx = 0.7, penaltyz = 0.7, K = 1)   # large penalty → denser
+	tight = BigRiverEssence.scca(X, Y; penaltyx = 0.1, penaltyz = 0.1, K = 1)   # small penalty → sparse
+	loose = BigRiverEssence.scca(X, Y; penaltyx = 0.7, penaltyz = 0.7, K = 1)   # large penalty → denser
 	@test count(!iszero, tight.u[:, 1]) <= count(!iszero, loose.u[:, 1])
 	@test count(!iszero, tight.v[:, 1]) <= count(!iszero, loose.v[:, 1])
 end
@@ -71,7 +67,7 @@ end
 	Zr = randn(n, p2)                 # PMA layout: obs in rows
 	Xr[:, 1:nz1] .+= lat * fill(2.0, nz1)'               # first nz1 X-features load on lat
 	Zr[:, 1:nz2] .+= lat * fill(2.0, nz2)'               # first nz2 Z-features load on lat
-	m = scca(Matrix(transpose(Xr)), Matrix(transpose(Zr));   # transpose to scca's var×obs layout
+	m = BigRiverEssence.scca(Matrix(transpose(Xr)), Matrix(transpose(Zr));   # transpose to scca's var×obs layout
 		penaltyx = 0.2, penaltyz = 0.2, K = 1)
 	sel_x = Set(findall(!iszero, m.u[:, 1]))
 	sel_z = Set(findall(!iszero, m.v[:, 1]))
@@ -88,9 +84,9 @@ end
 	Random.seed!(3)
 	X = randn(20, 80) .* 5 .+ 3;
 	Y = randn(15, 80)       # X deliberately off-scale
-	ms = scca(X, Y; K = 1, standardize = true)
-	mn = scca(X, Y; K = 1, standardize = false)
-	@test ms isa sccaStructure && mn isa sccaStructure   # both paths produce a valid fit
+	ms = BigRiverEssence.scca(X, Y; K = 1, standardize = true)
+	mn = BigRiverEssence.scca(X, Y; K = 1, standardize = false)
+	@test ms isa BigRiverEssence.sccaStructure && mn isa BigRiverEssence.sccaStructure   # both paths produce a valid fit
 end
 
 @testset "argument validation" begin
@@ -99,12 +95,12 @@ end
 	Random.seed!(0)
 	X = randn(10, 50);
 	Y = randn(8, 50)
-	@test_throws DimensionMismatch scca(X, randn(8, 40); K = 1)       # 50 vs 40 observations
-	@test_throws ArgumentError scca(randn(1, 50), Y; K = 1)           # need ≥ 2 features per view
-	@test_throws ArgumentError scca(X, Y; penaltyx = 0.0, K = 1)      # penalty must be in (0,1]
-	@test_throws ArgumentError scca(X, Y; penaltyx = 1.5, K = 1)
-	@test_throws ArgumentError scca(X, Y; K = 0)                      # K must be ≥ 1
-	@test_throws ArgumentError scca(X, Y; K = 11)                     # K > min(dx,dy)=8
+	@test_throws DimensionMismatch BigRiverEssence.scca(X, randn(8, 40); K = 1)       # 50 vs 40 observations
+	@test_throws ArgumentError BigRiverEssence.scca(randn(1, 50), Y; K = 1)           # need ≥ 2 features per view
+	@test_throws ArgumentError BigRiverEssence.scca(X, Y; penaltyx = 0.0, K = 1)      # penalty must be in (0,1]
+	@test_throws ArgumentError BigRiverEssence.scca(X, Y; penaltyx = 1.5, K = 1)
+	@test_throws ArgumentError BigRiverEssence.scca(X, Y; K = 0)                      # K must be ≥ 1
+	@test_throws ArgumentError BigRiverEssence.scca(X, Y; K = 11)                     # K > min(dx,dy)=8
 end
 
 # ----------------------------------------------------------------------------
@@ -114,48 +110,48 @@ end
 # surfaces here rather than as a downstream symptom.
 # ----------------------------------------------------------------------------
 
-@testset "internal: BRE._softcca!cca! (soft-threshold)" begin
+@testset "internal: BigRiverEssence._softcca!cca! (soft-threshold)" begin
 	# The L1 proximal operator: shrink toward 0 by λ, clamp to 0 once |a| ≤ λ. The
 	# single primitive that creates sparsity in the canonical vectors.
 	a = [5.0, -3.0, 1.0, -0.5];
 	out = similar(a)
-	BRE._softcca!(out, a, 2.0)
+	BigRiverEssence._softcca!(out, a, 2.0)
 	@test out ≈ [3.0, -1.0, 0.0, 0.0]              # 5→3, 3→1, |1|&|0.5| ≤ 2 ⇒ 0
-	@test BRE._softcca!(similar(a), a, 0.0) ≈ a            # λ=0 is the identity
+	@test BigRiverEssence._softcca!(similar(a), a, 0.0) ≈ a            # λ=0 is the identity
 	b = randn(50);
 	o = similar(b);
 	λ = 0.6
-	BRE._softcca!(o, b, λ)
+	BigRiverEssence._softcca!(o, b, λ)
 	@test o ≈ sign.(b) .* max.(abs.(b) .- λ, 0.0)  # matches the closed form
 end
 
 @testset "internal: _l2n_val (guarded L2 norm)" begin
 	# Euclidean norm with the PMA zero-guard: all-zeros returns 0.05, not 0, so the
 	# later normalizations never divide by zero.
-	@test _l2([3.0, 4.0]) == 5.0
-	@test _l2(zeros(5)) == 0.05                    # the zero-guard
+	@test BigRiverEssence._l2n_val([3.0, 4.0]) == 5.0
+	@test BigRiverEssence._l2n_val(zeros(5)) == 0.05                    # the zero-guard
 	a = randn(40);
-	@test _l2(a) ≈ norm(a)          # equals the true norm when nonzero
+	@test BigRiverEssence._l2n_val(a) ≈ norm(a)          # equals the true norm when nonzero
 end
 
 @testset "internal: _l1_of_norm & _l1_of_norm_soft" begin
 	# The L1/L2 ratio the budget constrains (1 = maximally sparse, √m = dense). The
 	# _soft variant computes the ratio for a soft-thresholded vector without building it.
-	@test _l1n([3.0, 4.0]) ≈ 7 / 5                 # (3+4)/5
-	@test _l1n(ones(9)) ≈ 3.0                      # 9/3 = √9, the dense maximum
-	a = randn(60);
-	λ = 0.5
-	@test _l1ns(a, λ) ≈ _l1n(sign.(a) .* max.(abs.(a) .- λ, 0.0))   # soft-then-ratio shortcut
-	@test _l1n(randn(30)) >= 1 - tol_ord           # ≥ 1 for any nonzero vector (Cauchy–Schwarz)
+	@test BigRiverEssence._l1_of_norm([3.0, 4.0]) ≈ 7 / 5                 # (3+4)/5
+	@test BigRiverEssence._l1_of_norm(ones(9)) ≈ 3.0                      # 9/3 = √9, the dense maximum
+	a = randn(60)
+	d = 0.5
+	@test BigRiverEssence._l1_of_norm_soft(a, d) ≈ BigRiverEssence._l1_of_norm(sign.(a) .* max.(abs.(a) .- d, 0.0))   # soft-then-ratio shortcut
+	@test BigRiverEssence._l1_of_norm(randn(30)) >= 1 - tol_ord           # ≥ 1 for any nonzero vector (Cauchy–Schwarz)
 end
 
 @testset "internal: _l1diff (L1 distance)" begin
 	# ‖a−b‖₁, the convergence metric between successive iterates.
-	@test _l1d([1.0, 2.0], [1.0, 2.0]) == 0.0
-	@test _l1d([1.0, 0.0], [0.0, 1.0]) == 2.0
+	@test BigRiverEssence._l1diff([1.0, 2.0], [1.0, 2.0]) == 0.0
+	@test BigRiverEssence._l1diff([1.0, 0.0], [0.0, 1.0]) == 2.0
 	a = randn(30);
 	b = randn(30)
-	@test _l1d(a, b) ≈ sum(abs, a .- b)
+	@test BigRiverEssence._l1diff(a, b) ≈ sum(abs, a .- b)
 end
 
 @testset "internal: _binary_search_opt (λ for the L1 budget)" begin
@@ -163,16 +159,16 @@ end
 	# target budget. Contract: 0 when already within budget, positive and bounded
 	# when over, and monotone (tighter budget ⇒ larger λ).
 	a = ones(4)                                    # l1_of_norm = 2.0
-	@test _bsearch(a, 3.0) == 0.0                  # budget 3 ≥ current 2 ⇒ nothing to do
-	@test _bsearch(zeros(6), 1.0) == 0.0           # all-zero input ⇒ 0
+	@test BigRiverEssence._binary_search_opt(a, 3.0) == 0.0                  # budget 3 ≥ current 2 ⇒ nothing to do
+	@test BigRiverEssence._binary_search_opt(zeros(6), 1.0) == 0.0           # all-zero input ⇒ 0
 	Random.seed!(3)
 	z = randn(60)
-	@test _l1n(z) > 3.0                            # confirm thresholding is actually needed
-	λ = _bsearch(z, 3.0)
+	@test BigRiverEssence._l1_of_norm(z) > 3.0                              # confirm thresholding is actually needed
+	λ = BigRiverEssence._binary_search_opt(z, 3.0)
 	@test λ > 0
 	@test λ <= maximum(abs, z)                     # never exceeds the largest coefficient
-	@test isapprox(_l1ns(z, λ), 3.0; atol = tol_r) # the found λ hits the budget (search precision)
-	@test _bsearch(z, 2.0) >= _bsearch(z, 4.0)     # tighter budget needs a larger threshold
+	@test isapprox(BigRiverEssence._l1_of_norm_soft(z, λ), 3.0; atol = tol_r) # the found λ hits the budget (search precision)
+	@test BigRiverEssence._binary_search_opt(z, 2.0) >= BigRiverEssence._binary_search_opt(z, 4.0)     # tighter budget needs a larger threshold
 end
 
 @testset "internal: _matsqrt (symmetric matrix square root)" begin
@@ -182,7 +178,7 @@ end
 	Random.seed!(5)
 	M = randn(8, 8);
 	A = M * M' + I               # symmetric positive-definite
-	R = _msqrt(A)
+	R = BigRiverEssence._matsqrt(A)
 	@test R * R ≈ A                                # R² = A (the defining property)
 	@test R ≈ R'                                   # and R is symmetric
 end
@@ -192,7 +188,7 @@ end
 	# the obs×obs space rather than the huge feature space. _fast_init_v returns the
 	# leading left singular vectors of zᵀ·(xxᵀ)^½ — orthonormal columns living in z's
 	# feature space, the starting point for the sparse iteration.
-	_fiv = BRE._fast_init_v
+	_fiv = BigRiverEssence._fast_init_v
 	Random.seed!(13)
 	nobs = 30;
 	p1 = 60;
@@ -204,7 +200,7 @@ end
 	@test size(V) == (p2, K)                       # init for v lives in z's feature space
 	@test V' * V ≈ I(K) atol = tol_ord             # orthonormal (it's an SVD U factor)
 	# Matches the documented construction exactly: U of svd(zᵀ · (xxᵀ)^½).
-	xx_sqrt = BRE._matsqrt(x * transpose(x))
+	xx_sqrt = BigRiverEssence._matsqrt(x * transpose(x))
 	Vref = svd(transpose(z)*xx_sqrt).U[:, 1:K]
 	for k in 1:K
 		@test abs(dot(V[:, k], Vref[:, k])) > 1 - tol_ord  # equal up to per-column sign
@@ -216,7 +212,6 @@ end
 	# soft-thresholded power iteration into caller-owned buffers. We plant a shared
 	# latent so there's real structure to find, standardize exactly as scca does, and
 	# check unit-norm, sparsity, the d-return identity, correlation, and selection.
-	sccacore = BRE._sparse_cca_single_opt!
 	Random.seed!(17)
 	nobs       = 100;
 	p1         = 40;
@@ -244,7 +239,7 @@ end
 	su = Vector{Float64}(undef, p1);
 	sv = Vector{Float64}(undef, p2)
 
-	d = sccacore(u, v, x, z, v0, px, pz, 50, vold, zv, xu, argu, argv, su, sv)
+	d = BigRiverEssence._sparse_cca_single_opt!(u, v, x, z, v0, px, pz, 50, vold, zv, xu, argu, argv, su, sv)
 
 	# The canonical vectors come out unit-norm (iterative core ⇒ the looser tol_julia).
 	@test isapprox(norm(u), 1.0; atol = tol_julia)
@@ -298,7 +293,7 @@ end
 		niter = Int(meta[4])
 
 		# scca takes obs-in-columns, so transpose PMA's row-major matrices to match.
-		m = scca(Matrix(transpose(X)), Matrix(transpose(Z));
+		m = BigRiverEssence.scca(Matrix(transpose(X)), Matrix(transpose(Z));
 			penaltyx = px, penaltyz = pz, K = K, niter = niter)
 
 		for k in 1:K
