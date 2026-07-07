@@ -1,15 +1,13 @@
 # generate_plskern_reference.jl — generate Jchemo reference fixtures for plskern tests.
 #
-# Fits Jchemo's plskern  on simulated data and writes
-# the inputs and Jchemo's outputs as CSVs. plskern_test.jl loads these to compare the
-# BigRiverEssence plskern against Jchemo without importing Jchemo at test time.
+# Fits Jchemo's plskern on simulated data and writes the inputs and Jchemo's outputs
+# as CSVs. plskern_test.jl loads these to compare the BigRiverEssence plskern against
+# Jchemo without importing Jchemo at test time.
 #
-# Run from the package root (with Jchemo available in the active environment):
-#     julia --project=@. test/Data/PLSKERN/generate_plskern_reference.jl
-# or from a REPL that has Jchemo:
+# Run from a REPL (or environment) that has Jchemo available:
 #     include("test/Data/PLSKERN/generate_plskern_reference.jl")
 
-using Jchemo, Random, DelimitedFiles, Dates, Pkg
+using Jchemo, Random, DelimitedFiles
 
 const OUTDIR = @__DIR__            # write CSVs next to this script (test/Data/PLSKERN)
 
@@ -41,33 +39,17 @@ BY_jc    = Jchemo.coef(modY).B                  # (P, Q)
 predY_jc = Jchemo.predict(modY, X).pred         # (N, Q)
 
 # ---- write everything -------------------------------------------------------------
-writedlm(joinpath(OUTDIR, "X.csv"),        X,         ',')
-writedlm(joinpath(OUTDIR, "y.csv"),        y, ',')
-writedlm(joinpath(OUTDIR, "Y_multi.csv"),  Y, ',')
-writedlm(joinpath(OUTDIR, "B.csv"),        B_jc,      ',')
-writedlm(joinpath(OUTDIR, "pred.csv"),     pred_jc,   ',')
-writedlm(joinpath(OUTDIR, "transf.csv"),   transf_jc, ',')
-writedlm(joinpath(OUTDIR, "B_multi.csv"),  BY_jc,     ',')
-writedlm(joinpath(OUTDIR, "pred_multi.csv"), predY_jc, ',')
+writedlm(joinpath(OUTDIR, "X.csv"),          X,         ',')
+writedlm(joinpath(OUTDIR, "y.csv"),          y,         ',')
+writedlm(joinpath(OUTDIR, "Y_multi.csv"),    Y,         ',')
+writedlm(joinpath(OUTDIR, "B.csv"),          B_jc,      ',')
+writedlm(joinpath(OUTDIR, "pred.csv"),       pred_jc,   ',')
+writedlm(joinpath(OUTDIR, "transf.csv"),     transf_jc, ',')
+writedlm(joinpath(OUTDIR, "B_multi.csv"),    BY_jc,     ',')
+writedlm(joinpath(OUTDIR, "pred_multi.csv"), predY_jc,  ',')
 
 # meta.csv: parameters the fixtures were generated with (read back by the test)
 writedlm(joinpath(OUTDIR, "meta.csv"),
     ["seed" seed; "n" N; "p" P; "nlv" NLV; "q" Q], ',')
 
-# session_info.txt: provenance, so a future mismatch can be traced to a version change
-open(joinpath(OUTDIR, "session_info.txt"), "w") do io
-    println(io, "plskern Jchemo reference fixtures")
-    println(io, "generated: ", Dates.now())
-    println(io, "julia version: ", VERSION)
-    println(io, "Jchemo version: ", pkgversion(Jchemo))
-    println(io, "seed: ", seed)
-    println(io, "n, p, nlv, q: ", (N, P, NLV, Q))
-end
-
 println("Wrote plskern fixtures to ", OUTDIR)
-
-
-
-
-
-

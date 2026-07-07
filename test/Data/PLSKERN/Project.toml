@@ -1,0 +1,9 @@
+[deps]
+DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Jchemo = "fbca9394-dd0a-4d1c-b066-ae75f6ef1ad5"
+
+[compat]
+DelimitedFiles = "=1.9.1"
+Random = "=1.11.0"
+Jchemo = "=0.10.0"

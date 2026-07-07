@@ -1,6 +1,0 @@
-plskern Jchemo reference fixtures
-generated: 2026-07-07T11:37:20.748
-julia version: 1.12.6
-Jchemo version: 0.9.7
-seed: 1276523
-n, p, nlv, q: (400, 50, 12, 3)
