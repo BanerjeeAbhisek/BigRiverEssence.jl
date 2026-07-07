@@ -130,6 +130,50 @@ end
 	end
 end
 
+@testset "pca :svd wide-data branch (p > n)" begin
+	Random.seed!(12311)
+	# Wide data: more features than observations forces the p > n path inside :svd.
+	n, p = 20, 50
+	X = randn(n, p)
+	k = 10
+
+	# Force :svd so we exercise the SVD branch (not :cov); p > n routes us into the
+	# transpose-SVD sub-branch specifically.
+	m_svd = pca(X; k = k, method = :svd)
+	# :cov on the same wide data is an independent route to the same PCA.
+	m_cov = pca(X; k = k, method = :cov)
+
+	# variances: same eigenvalues computed two ways, same machine ⇒ exact-level
+	@test isapprox(m_svd.variances, m_cov.variances; rtol = tol_ord)
+	# loadings agree up to per-column sign (Julia-vs-Julia cross-method)
+	@test isapprox(abs.(m_svd.loadings), abs.(m_cov.loadings); rtol = tol_julia)
+
+	# structural properties
+	@test size(m_svd.loadings) == (p, k)
+	@test length(m_svd.variances) == k
+	@test isapprox(m_svd.loadings' * m_svd.loadings, I(k); atol = tol_ord)   # orthonormal columns
+	@test all(diff(m_svd.variances) .<= tol_ord)                            # descending
+	@test all(m_svd.variances .> 0)                                         # positive
+	@test all(m_svd.propOFvar .> 0)
+	@test sum(m_svd.propOFvar) <= 1 + tol_ord                               # ≤ 1 for truncated PCA
+end
+
+@testset "pca :svd wide-data branch with standardize" begin
+	Random.seed!(12654)
+	# Same wide branch, now with standardize=true to cover that sub-path.
+	n, p = 15, 40
+	X = randn(n, p)
+	k = 8
+
+	m_svd = pca(X; k = k, method = :svd, standardize = true)
+	m_cov = pca(X; k = k, method = :cov, standardize = true)
+
+	@test isapprox(m_svd.variances, m_cov.variances; rtol = tol_julia)
+	@test isapprox(abs.(m_svd.loadings), abs.(m_cov.loadings); rtol = tol_julia)
+	@test size(m_svd.loadings) == (p, k)
+	@test all(m_svd.variances .> 0)
+end
+
 @testset "transform / inverse round-trip" begin
 	# Projecting data into PC space and back should be lossless when we keep all
 	# components — no information is discarded, so the reconstruction returns X.
