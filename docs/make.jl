@@ -12,6 +12,8 @@ makedocs(; modules=[BigRiverEssence], sitename="BigRiverEssence.jl", pages=[
         "Penalized Matrix Decomposition" => "pmd_tutorial.md",
         "Sparse Principal Component Analysis" => "spc_tutorial.md",
         "Partial Least Squares kernal Regression" => "plskern_tutorial.md",
+        "Sparse Partial Least Squares Discriminant Analysis" => "splsda_tutorial.md",
+        "Joint and Individual Variation Explained" => "jive_tutorial.md",
         "API Reference" => "api.md", 
         # "Example: MLM for ordinal predictors" => "example_ordinal_data.md",
         # "Types and Functions" => "functions.md",
