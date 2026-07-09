@@ -36,7 +36,7 @@ the JIVE method [2].
 
 ```@example jive
 using BigRiverEssence, Plots, StatsPlots, Clustering, Distances
-using LinearAlgebra, Statistics, DelimitedFiles
+using LinearAlgebra, Statistics, DelimitedFiles, Random
 ```
 
 
@@ -60,6 +60,7 @@ Now we fit `jive` by passing the three blocks with specifying the ranks. This le
 
 
 ```@example jive
+Random.seed!(1234)
 res = jive([X1, X2, X3])
 rJ  = res.r
 println("Estimated ranks: joint = $rJ, individual = $(res.ri)")
