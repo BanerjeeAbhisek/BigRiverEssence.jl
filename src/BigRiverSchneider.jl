@@ -21,6 +21,10 @@ export plskernStructure, plskern, plskerncoef, plskernpredict, plskerntransform
 include("jive.jl")
 export jiveStructure, jive
 
+include("plsda.jl")
+export PlsdaStructure, plsda
+
+
 include("splsda.jl")
 export splsdaStructure, splsda
 
