@@ -60,10 +60,8 @@ Pkg.add(url = "https://github.com/senresearch/BigRiverEssence.jl", rev="main")
 
 ## Contributing
 
-Contributions are welcome. Users can contribute by reporting bugs or 
-suggesting enhancements through a GitHub issue or submitting a pull request.
-We also welcome contributions that improve documentation, performance, testing, and 
-functionality.
+We welcome contributions that improve documentation, performance, testing, and functionality. 
+Users can contribute by opening an issue or submitting a pull request.
 
 ## Questions
 
