@@ -1,4 +1,4 @@
-using BigRiverSchenider, RCall, BenchmarkTools, LinearAlgebra, Statistics
+using BigRiverSchneider, RCall, BenchmarkTools, LinearAlgebra, Statistics
 
 # ===============================================================
 # Setup: SRBCT data + fit both implementations once (for correctness)
@@ -22,13 +22,13 @@ ncomp    = Int(rcopy(R"ncomp"))
 var_mix  = rcopy(R"var_mix")
 load_mix = rcopy(R"load_mix")
 
-m = BigRiverSchenider.plsda(X, y, ncomp; scale = true, levels = levels)
+m = BigRiverSchneider.plsda(X, y, ncomp; scale = true, levels = levels)
 
 # ===============================================================
 # PART 1 — CORRECTNESS: are the two implementations the same?
 # ===============================================================
 println("="^60)
-println("PART 1 — CORRECTNESS  (BigRiverSchenider.plsda vs mixOmics)")
+println("PART 1 — CORRECTNESS  (BigRiverSchneider.plsda vs mixOmics)")
 println("="^60)
 
 tol = 1e-6
@@ -64,8 +64,8 @@ println("\n" * "="^60)
 println("PART 2 — SPEED")
 println("="^60)
 
-println("\nJulia  BigRiverSchenider.plsda  (@btime, reports minimum):")
-@btime BigRiverSchenider.plsda($X, $y, $ncomp; scale = true, levels = $levels);
+println("\nJulia  BigRiverSchneider.plsda  (@btime, reports minimum):")
+@btime BigRiverSchneider.plsda($X, $y, $ncomp; scale = true, levels = $levels);
 
 println("\nR  mixOmics::plsda  (microbenchmark, 100 runs):")
 R"""
@@ -81,3 +81,51 @@ println("NOTE: @btime reports the MINIMUM; compare against microbenchmark's")
 println("'min' column. Watch the UNIT in the microbenchmark table header")
 println("(µs vs ms) before concluding which is faster.")
 println("="^60)
+
+
+
+
+
+
+#=
+
+============================================================
+PART 1 — CORRECTNESS  (BigRiverSchneider.plsda vs mixOmics)
+============================================================
+comp 1:  Δloadings = 4.34e-16   ✓   Δvariates = 1.19e-13   ✓
+comp 2:  Δloadings = 3.4e-16    ✓   Δvariates = 1.23e-13   ✓
+comp 3:  Δloadings = 9.71e-17   ✓   Δvariates = 3.15e-14   ✓
+
+classes (ours):    ["EWS", "BL", "NB", "RMS"]
+levels (mixOmics): ["EWS", "BL", "NB", "RMS"]
+
+OVERALL: ✓ MATCH (within 1.0e-6)
+
+============================================================
+PART 2 — SPEED
+============================================================
+
+Julia  BigRiverSchneider.plsda  (@btime, reports minimum):
+  1.111 ms (191 allocations: 5.41 MiB)
+
+R  mixOmics::plsda  (microbenchmark, 100 runs):
+┌ Warning: RCall.jl: Warning in microbenchmark(plsda(Xg, Ycl, ncomp = ncomp, scale = TRUE), times = 100L) :
+│   less accurate nanosecond times to avoid potential integer overflows
+└ @ RCall ~/.julia/packages/RCall/fTLHT/src/io.jl:166
+Unit: milliseconds
+                                        expr      min       lq     mean
+ plsda(Xg, Ycl, ncomp = ncomp, scale = TRUE) 9.078876 10.15625 13.46446
+   median       uq      max neval
+ 11.83467 12.74698 98.13625   100
+
+============================================================
+NOTE: @btime reports the MINIMUM; compare against microbenchmark's
+'min' column. Watch the UNIT in the microbenchmark table header
+(µs vs ms) before concluding which is faster.
+============================================================
+=#
+
+
+
+
+
