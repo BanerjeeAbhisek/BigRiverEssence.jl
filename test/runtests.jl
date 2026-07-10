@@ -1,5 +1,5 @@
 # Library
-
+using Aqua
 using MultivariateStats: MultivariateStats
 using BigRiverEssence
 using Test
@@ -22,6 +22,10 @@ const tol_r     = 1e-3
 # ─────────────────────────────────────────────────────────────────────────────
 
 @testset "BigRiverEssence.jl" begin
+
+	@testset "Aqua" begin
+        Aqua.test_all(BigRiverEssence)
+    end
 	@testset "Utility" begin
 		include("utils.jl")
 	end
