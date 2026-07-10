@@ -1,6 +1,6 @@
 # PCA: Principal Component Analysis
 
-Principal Component Analysis or PCA points is a dimension reduction technique that gives the direction that explains the most variability in a dataset. It is mostly used in exploratory data analysis and visualization. 
+Principal Component Analysis or PCA is a dimension reduction technique that gives the direction that explains the most variability in a dataset. It is mostly used in exploratory data analysis and visualization. 
 
 Suppose we have a data matrix with many correlated variables. Using naive regression techniques in such a setting can lead to problems such as multicolinearity and curse of dimensionality. PCA constructs small number of ordered uncorrelated axes, which are called principal components, such that the first captures the most variance in the dataset. each principal component follows the previous one in amount of variablity explained. Projecting the data onto first few principal components reveals pattern or structure which are hidden in the original dataset or matrix. 
 
