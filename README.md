@@ -9,23 +9,26 @@
 
 ## Description
 
-> **Why “Essence”?** The name reflects the package’s goal of reducing large, high-dimensional data matrices to their essential structure through matrix decomposition and dimension reduction.
-
-BigRiverEssence provides different methods for capturing the essential structure 
+BigRiverEssence implements different methods for capturing the essential structure 
 of high-dimensional data matrices. It provides a broad range of methods, from standard 
 techniques to specialized algorithms for sparse, supervised, and integrative analyses.
 
+> **Why “Essence”?** The name reflects the package’s goal of reducing
+> large, high-dimensional data matrices to their essential structure
+> through matrix decomposition and dimension reduction.  It is a
+> component of the BigRiver Julia package ecosystem.
+
 These methods can be used to extract low-dimensional structure, identify sparse latent components, 
 and characterize shared and dataset-specific variation across multiple data sources. The package 
-is designed for high-dimensional applications, particularly high-throughput biological and omics 
+is designed for high-dimensional data, particularly high-throughput biological and omics 
 data.
 
-The core routines are implemented with computational efficiency in mind, with an emphasis on 
-reducing memory usage and unnecessary allocations. They rely primarily on optimized matrix 
+The core routines prioritize computational efficiency in mind, with an emphasis on 
+reducing memory usage. They rely primarily on optimized matrix 
 operations to support fast exploratory data analysis, feature extraction, supervised dimension 
 reduction, and integrative analysis of complex datasets.
 
-The package currently includes the following methods:
+The package currently implements the following methods:
 
 * Principal Component Analysis (PCA)[^1]
 * Sparse Principal Component Analysis (SPCA)[^2]
