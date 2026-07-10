@@ -199,18 +199,18 @@ end
 # at the source rather than as a confusing symptom in the full decomposition.
 # ----------------------------------------------------------------------------
 
-@testset "internal: _safe_svd / __safe_svdvals / __safe_svd!" begin
+@testset "internal: _safe_svd / __safe_svdvals / _safe_svd!" begin
 	# The _safe_svd* wrappers fall back to a robust algorithm on LAPACK convergence
 	# failures, but on normal input they must behave exactly like Base's svd: reproduce
-	# the factorization, and return the same singular values. __safe_svd! mutates input.
+	# the factorization, and return the same singular values. _safe_svd! mutates input.
 	Random.seed!(7)
 	A = randn(40, 25)
 	F = BigRiverEssence._safe_svd(A)
 	@test F.U * Diagonal(F.S) * F.Vt ≈ A                  # factorization reconstructs A
-	@test BigRiverEssence.__safe_svdvals(A) ≈ svdvals(A)                          # singular values match Base
+	@test BigRiverEssence._safe_svdvals(A) ≈ svdvals(A)                          # singular values match Base
 	@test F.S ≈ svdvals(A)
-	Acopy = copy(A)                                       # __safe_svd! overwrites its argument,
-	F2 = BigRiverEssence.__safe_svd!(Acopy)                                    # so pass a copy to keep A intact
+	Acopy = copy(A)                                       # _safe_svd! overwrites its argument,
+	F2 = BigRiverEssence._safe_svd!(Acopy)                                    # so pass a copy to keep A intact
 	@test F2.U * Diagonal(F2.S) * F2.Vt ≈ A
 end
 

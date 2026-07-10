@@ -51,7 +51,7 @@ function _safe_svd(A)
 end
 
 """
-	__safe_svdvals(A)
+	_safe_svdvals(A)
 
 Compute singular values, falling back to a more robust algorithm if the default
 one fails to converge
@@ -61,7 +61,7 @@ one fails to converge
 A vector of singular values. Like `_safe_svd`, retries with QR iteration on a
 `LAPACKException` and rethrows anything else
 """
-function __safe_svdvals(A)
+function _safe_svdvals(A)
 	try
 		return svdvals(A)
 	catch e
@@ -71,7 +71,7 @@ function __safe_svdvals(A)
 end
 
 """
-	__safe_svd!(A)
+	_safe_svd!(A)
 
 In-place variant of `_safe_svd`: compute an SVD, overwriting `A`, with a robust
 fallback on convergence failure
@@ -83,7 +83,7 @@ An `SVD` factorization object. Tries the in-place `svd!` first; on a
 `LAPACKException` retries with the (non-mutating) QR-iteration SVD. Used in the
 inner JIVE iterations where the input is scratch that can be destroyed
 """
-function __safe_svd!(A)
+function _safe_svd!(A)
 	try
 		return svd!(A)
 	catch e
@@ -177,7 +177,7 @@ function _jive_rjive_core_opt2(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::
 		#  joint update: rank-r SVD of (stacked data − individual) 
 		if r > 0
 			@. tmpJ = Xtot - Atot
-			s = __safe_svd!(tmpJ)
+			s = _safe_svd!(tmpJ)
 			@views mul!(USj, s.U[:, 1:r], Diagonal(s.S[1:r]))
 			@views mul!(Jtot, USj, s.Vt[1:r, :])             # joint = rank-r truncation
 			@views copyto!(V, transpose(s.Vt[1:r, :]))       # the joint row space
@@ -206,7 +206,7 @@ function _jive_rjive_core_opt2(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::
 						mul!(tmp, pj, transpose(Vj), -1.0, 1.0)    # remove other blocks' individual spaces
 					end
 				end
-				s = __safe_svd!(tmp)
+				s = _safe_svd!(tmp)
 				@views copyto!(Vind[i], transpose(s.Vt[1:ri[i], :]))
 				@views mul!(A[i], s.U[:, 1:ri[i]] * Diagonal(s.S[1:ri[i]]), s.Vt[1:ri[i], :])
 			else
