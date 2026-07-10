@@ -44,3 +44,57 @@
 	@test all(iszero, V7)
 	@test all(isfinite, V7)
 end
+
+@testset "internal: vip (Variable Importance in Projection)" begin
+	# VIP scores summarize each variable's contribution across components. The defining
+	# properties: correct shape, the normalization (mean squared VIP = 1), nonnegativity,
+	# and that it works on both plsda and splsda fits.
+
+	Random.seed!(1)
+	n, p, ncomp = 60, 40, 3
+	y = repeat(["A", "B", "C"], inner = 20)
+	X = randn(n, p)
+
+	# --- on a plsda (dense) fit ---
+	m = BigRiverEssence.plsda(X, y, ncomp)
+	V = BigRiverEssence.vip(m)
+
+	@test size(V) == (p, ncomp)                       # one row per variable, one col per component
+
+	# The core normalization: the mean of the SQUARED VIP scores (last column) is 1.
+	# This is what makes VIP > 1 the "above-average importance" threshold.
+	@test isapprox(mean(V[:, end] .^ 2), 1.0; atol = tol_ord)
+
+	@test all(V .>= 0)                                # VIP scores are nonnegative (sqrt of nonneg)
+	@test all(isfinite, V)                            # no NaN/Inf
+
+	# --- works on an splsda (sparse) fit too (same fields, same computation) ---
+	ms = BigRiverEssence.splsda(X, y, ncomp, [15, 15, 15])
+	Vs = BigRiverEssence.vip(ms)
+	@test size(Vs) == (p, ncomp)
+	@test isapprox(mean(Vs[:, end] .^ 2), 1.0; atol = tol_ord)   # normalization holds for sparse too
+	@test all(Vs .>= 0)
+
+	# --- signal variables score higher than noise (VIP actually ranks importance) ---
+	# Plant class-specific means in the first 5 variables; the rest are noise.
+	Random.seed!(2)
+	classes = ["A", "B", "C"]; n_per = 20
+	yy = repeat(classes, inner = n_per); nn = length(yy); pp = 60
+	XX = randn(nn, pp) .* 0.5
+	for (ci, cls) in enumerate(classes)
+		XX[findall(==(cls), yy), 1:5] .+= ci * 2.0
+	end
+	msig = BigRiverEssence.plsda(XX, yy, 2)
+	Vsig = BigRiverEssence.vip(msig)[:, end]
+	@test mean(Vsig[1:5]) > mean(Vsig[6:end])         # signal vars have higher VIP than noise
+
+	# --- single-component case: VIP[:,1] = sqrt(p)·|loading| (the h=1 branch) ---
+	m1 = BigRiverEssence.plsda(X, y, 1)
+	V1 = BigRiverEssence.vip(m1)
+	@test size(V1) == (p, 1)
+	@test isapprox(mean(V1[:, 1] .^ 2), 1.0; atol = tol_ord)   # normalization still holds at ncomp=1
+
+	# --- the number of above-threshold variables is sensible (not all, not none) ---
+	nabove = count(>(1.0), V[:, end])
+	@test 0 < nabove < p                              # some variables clear the bar, not all
+end

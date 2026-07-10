@@ -121,21 +121,6 @@ $1$ are of above-average importance.
 
 
 ```@example splsda
-function vip(m)
-    W = m.loadings_X
-    H = m.ncomp
-    Y = m.Y_dummy
-    p = size(W, 1)
-    VIP = zeros(p, H)
-    cor2 = reshape(cor(Y, m.variates_X).^2, size(Y, 2), H)
-    VIP[:, 1] .= W[:, 1].^2
-    for h in 2:H
-        Rd = vec(sum(cor2[:, 1:h], dims = 1))
-        VIP[:, h] = (W[:, 1:h].^2 * Rd) ./ sum(Rd)
-    end
-    return sqrt.(p .* VIP)
-end
-
 vip_final = vip(m)[:, end]           # cross-component VIP
 
 scatter(vip_final; markersize = 2, legend = false,

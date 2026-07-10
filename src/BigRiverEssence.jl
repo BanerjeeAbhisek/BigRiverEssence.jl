@@ -5,6 +5,7 @@ using LinearAlgebra, Statistics, Random
 
 
 include("utils.jl")
+export vip
 
 include("pca.jl")
 export Pca, pca, pca_transform, pca_invtransform

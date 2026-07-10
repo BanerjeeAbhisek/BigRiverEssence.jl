@@ -69,7 +69,7 @@ Now we project the samples onto the first two components and color by tumor clas
 V = m.variates_X
 scatter(V[:, 1], V[:, 2]; group = y,
     xlabel = "PLSDA component 1", ylabel = "PLSDA component 2",
-    title = "SRBCT samples: components 1 and 2", legend = :topright,
+    title = "SRBCT samples: components 1 and 2", legend = :outerright,
     markersize = 5, markerstrokewidth = 0.5)
 ```
 
@@ -95,38 +95,39 @@ bar(L1[sel]; xticks = (1:length(sel), string.(sel)), xrotation = 90,
 ## Variable importance (VIP)
 
 VIP (Variable Importance in Projection) summarizes each gene's contribution across all
-components into a single score. We compute it as in `mixOmics`: variables with VIP above
-$1$ are of above-average importance.
+components into a single score. We compute it as in `mixOmics`: variables with VIP scores to see the proportion above or below $1$.
+
 
 
 
 ```@example plsda
-function vip(m)
-    W = m.loadings_X
-    H = m.ncomp
-    Y = m.Y_dummy
-    p = size(W, 1)
-    VIP = zeros(p, H)
-    cor2 = reshape(cor(Y, m.variates_X).^2, size(Y, 2), H)
-    VIP[:, 1] .= W[:, 1].^2
-    for h in 2:H
-        Rd = vec(sum(cor2[:, 1:h], dims = 1))
-        VIP[:, h] = (W[:, 1:h].^2 * Rd) ./ sum(Rd)
-    end
-    return sqrt.(p .* VIP)
-end
+vip_final = vip(m)[:, end]                    # cross-component VIP (last column)
 
-vip_final = vip(m)[:, end]           # cross-component VIP
+# --- all genes, sorted by VIP, thin horizontal bars ---
+ord  = sortperm(vip_final; rev = true)        # ALL genes, sorted high → low VIP
+vals = vip_final[ord]
+n    = length(vals)
 
-scatter(vip_final; markersize = 2, legend = false,
-    xlabel = "gene index", ylabel = "VIP",
-    title = "Variable Importance in Projection")
-hline!([1.0], color = :red, linestyle = :dash)
+xhi = ceil(maximum(vals) * 10) / 10           # a bit above the largest VIP
+
+bar(
+    1:n, reverse(vals);                       # explicit (category, value) so orientation is unambiguous
+    orientation = :horizontal,
+    fillcolor = :black, linecolor = :grey,   # thin black bars
+    bar_width = 1.0,
+    yticks = false,                            # 2308 labels won't fit — hide them
+    legend = false,
+    xlims = (0, xhi),                          # VIP axis: 0 to ~2.4 (NOT the gene count)
+    xlabel = "VIP ($(m.ncomp) axes)",
+    ylabel = "genes (sorted by VIP)",
+    title = "Variable Importance in Projection",
+    left_margin = (10,:mm),
+    size = (600, 550)
+)
+vline!([1.0], color = :red, linestyle = :dash)   # threshold at VIP = 1
 ```
 
-Since PLSDA uses all the genes, the VIP is spread across many variables rather than
-concentrated on a selected few. The genes above the dashed line at VIP = $1$ are the
-most influential across the three components.
+We see in the above plot, that when sorted by VIP, around half of genes have VIP avove 1 and half below 1. 
 
 ## Summary
 
