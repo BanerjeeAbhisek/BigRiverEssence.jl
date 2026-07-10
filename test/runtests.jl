@@ -40,6 +40,9 @@ const tol_r     = 1e-3
 	@testset "Joint and Individual Variation Explained (jive)" begin
 		include("jive_test.jl")
 	end
+	@testset "Partial Least Squares Discriminant Analysis (plsda)" begin
+		include("plsda_test.jl")
+	end
 	@testset "Sparse Partial Least Squares Discriminant Analysis (splsda)" begin
 		include("splsda_test.jl")
 	end

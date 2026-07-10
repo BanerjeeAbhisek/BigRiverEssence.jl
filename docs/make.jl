@@ -12,6 +12,7 @@ makedocs(; modules=[BigRiverEssence], sitename="BigRiverEssence.jl", pages=[
         "Penalized Matrix Decomposition (PMD)" => "pmd_tutorial.md",
         "Sparse Principal Component Analysis (SPC)" => "spc_tutorial.md",
         "Partial Least Squares kernel Regression (PLSkern)" => "plskern_tutorial.md",
+        "Partial Least Squares Discriminant Analysis (PLSDA)" => "plsda_tutorial.md",
         "Sparse Partial Least Squares Discriminant Analysis (SPLSDA)" => "splsda_tutorial.md",
         "Joint and Individual Variation Explained (JIVE)" => "jive_tutorial.md",
         "Canonical Correlation Analysis (CCA)" => "cca_tutorial.md",
