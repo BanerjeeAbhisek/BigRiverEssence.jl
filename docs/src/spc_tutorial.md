@@ -111,7 +111,7 @@ mo = spc_orth(dna; k = 3, c = c, standardize = true)
 @show [count(!iszero, mo.loadings[:, j]) for j in 1:3]  # number of non-zero loadings per component
 ```
 
-`spc_orth` returns the same `spcStructure` type, so we can read its fields exactly as
+`spc_orth` returns the same `SpcStructure` type, so we can read its fields exactly as
 before. We can use `spc` when we want the simplest sparse components, and `spc_orth` when
 orthogonal scores matter for downstream interpretation.
 

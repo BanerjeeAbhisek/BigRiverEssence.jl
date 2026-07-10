@@ -1,5 +1,5 @@
 # Test/plskern_test.jl — tests for plskern (Dayal & MacGregor 1997 kernel PLS) and
-# its companions plskerncoef / plskernpredict / plskerntransform.
+# its companions plskern_coef / plskern_predict / plskern_transform.
 # Tolerances (tol_ord / tol_julia / tol_r) come from runtests.jl: tol_ord for exact
 # linear-algebra identities, tol_julia for the cross-implementation Jchemo checks.
 #
@@ -24,7 +24,7 @@
 	Y = randn(n, q)
 	m = BigRiverEssence.plskern(X, Y; nlv = nlv)
 
-	@test m isa BigRiverEssence.plskernStructure
+	@test m isa BigRiverEssence.PlskernStructure
 	@test size(m.W) == (p, nlv)            # weights
 	@test size(m.P) == (p, nlv)            # X loadings
 	@test size(m.Q) == (q, nlv)            # Y loadings
@@ -68,7 +68,7 @@ end
 
 @testset "T = Xc·R (scores are linear in deflated X)" begin
 	# The scores aren't a black box: they're exactly the centered/scaled data times
-	# the projection matrix R. This identity lets plskerntransform reproduce scores
+	# the projection matrix R. This identity lets plskern_transform reproduce scores
 	# on new data, so it must hold exactly on the training data.
 	Random.seed!(4)
 	X = randn(60, 20);
@@ -90,8 +90,8 @@ end
 	@test isapprox(m1.R, m2.R; rtol = tol_ord)
 	@test isapprox(m1.T, m2.T; rtol = tol_ord)
 	@test isapprox(m1.Q, m2.Q; rtol = tol_ord)
-	B1, i1 = BigRiverEssence.plskerncoef(m1);
-	B2, i2 = BigRiverEssence.plskerncoef(m2)
+	B1, i1 = BigRiverEssence.plskern_coef(m1);
+	B2, i2 = BigRiverEssence.plskern_coef(m2)
 	@test isapprox(B1, B2; rtol = tol_ord)             # B has no sign/rotation freedom ⇒ identical
 	@test isapprox(i1, i2; rtol = tol_ord)
 end
@@ -105,7 +105,7 @@ end
 	X = randn(n, p);
 	y = randn(n)
 	m = BigRiverEssence.plskern(X, reshape(y, :, 1); nlv = p)
-	ŷ = vec(BigRiverEssence.plskernpredict(m, X))
+	ŷ = vec(BigRiverEssence.plskern_predict(m, X))
 	Xc = X .- mean(X, dims = 1)
 	B_ols = Xc \ (y .- mean(y))                            # OLS on the same y the fit used (it stays intact)
 	ŷ_ols = mean(y) .+ Xc * B_ols
@@ -115,31 +115,31 @@ end
 	mY = plskern(X, Y; nlv = p)
 	Yc = Y .- mean(Y, dims = 1)
 	B_olsY = Xc \ Yc
-	@test isapprox(BigRiverEssence.plskernpredict(mY, X), (mean(Y, dims = 1) .+ Xc * B_olsY); rtol = tol_ord)
+	@test isapprox(BigRiverEssence.plskern_predict(mY, X), (mean(Y, dims = 1) .+ Xc * B_olsY); rtol = tol_ord)
 end
 
-@testset "plskerncoef: B and intercept shapes & reconstruction" begin
-	# plskerncoef collapses the latent model into a plain linear predictor (B, intercept).
+@testset "plskern_coef: B and intercept shapes & reconstruction" begin
+	# plskern_coef collapses the latent model into a plain linear predictor (B, intercept).
 	# Two things to verify: the shapes, and that predicting via B reproduces
-	# plskernpredict exactly — i.e. coef-then-apply ≡ the model's own predict.
+	# plskern_predict exactly — i.e. coef-then-apply ≡ the model's own predict.
 	Random.seed!(7)
 	n, p, q = 70, 15, 3
 	X = randn(n, p);
 	Y = randn(n, q)
 	m = BigRiverEssence.plskern(X, Y; nlv = 8)
-	B, intercept = BigRiverEssence.plskerncoef(m)
+	B, intercept = BigRiverEssence.plskern_coef(m)
 	@test size(B) == (p, q)                # one coefficient per (feature, response)
 	@test size(intercept) == (1, q)        # one intercept per response
-	@test BigRiverEssence.plskernpredict(m, X) ≈ intercept .+ X * B    # the two prediction routes agree
+	@test BigRiverEssence.plskern_predict(m, X) ≈ intercept .+ X * B    # the two prediction routes agree
 	# Nested property: asking coef for fewer components must equal a model actually
 	# fit at that smaller nlv — truncation and refitting give the same B.
-	B5, _ = BigRiverEssence.plskerncoef(m; nlv = 5)
+	B5, _ = BigRiverEssence.plskern_coef(m; nlv = 5)
 	m5 = BigRiverEssence.plskern(X, Y; nlv = 5)
-	B5b, _ = BigRiverEssence.plskerncoef(m5)
+	B5b, _ = BigRiverEssence.plskern_coef(m5)
 	@test isapprox(B5, B5b; rtol = tol_ord)
 end
 
-@testset "plskerntransform: scores on training data == m.T" begin
+@testset "plskern_transform: scores on training data == m.T" begin
 	# Transforming the original training data should reproduce the stored scores m.T
 	# exactly (it's the same T = Xc·R computation). Also check the nlv keyword returns
 	# just the first nlv score columns.
@@ -147,8 +147,8 @@ end
 	X = randn(50, 12);
 	y = randn(50)
 	m = BigRiverEssence.plskern(X, reshape(y, :, 1); nlv = 6)
-	@test isapprox(BigRiverEssence.plskerntransform(m, X), m.T; rtol = tol_ord)
-	@test isapprox(BigRiverEssence.plskerntransform(m, X; nlv = 3), m.T[:, 1:3]; rtol = tol_ord)
+	@test isapprox(BigRiverEssence.plskern_transform(m, X), m.T; rtol = tol_ord)
+	@test isapprox(BigRiverEssence.plskern_transform(m, X; nlv = 3), m.T[:, 1:3]; rtol = tol_ord)
 end
 
 @testset "standardize=true scales X and Y" begin
@@ -207,10 +207,10 @@ end
 
 	# --- single response: our plskern on the same X, y ---
 	m_mine    = BigRiverEssence.plskern(X, reshape(y, :, 1); nlv = nlv, method = :algo1)
-	B_mine, _ = BigRiverEssence.plskerncoef(m_mine)
+	B_mine, _ = BigRiverEssence.plskern_coef(m_mine)
 	@test maximum(abs.(B_mine .- B_jc)) < tol_julia          # B is sign-unambiguous ⇒ direct compare
 
-	ŷ_mine = BigRiverEssence.plskernpredict(m_mine, X)       # (N, 1), same shape as pred_jc
+	ŷ_mine = BigRiverEssence.plskern_predict(m_mine, X)       # (N, 1), same shape as pred_jc
 	@test maximum(abs.(ŷ_mine .- pred_jc)) < tol_julia       # predictions also have no sign freedom
 
 	# Scores match only up to per-column sign — latent factors are sign-ambiguous.
@@ -221,11 +221,11 @@ end
 
 	# --- algo2 path must agree with Jchemo too ---
 	m2 = BigRiverEssence.plskern(X, reshape(y, :, 1); nlv = nlv, method = :algo2)
-	B2, _ = BigRiverEssence.plskerncoef(m2)
+	B2, _ = BigRiverEssence.plskern_coef(m2)
 	@test maximum(abs.(B2 .- B_jc)) < tol_julia
 
 	# --- multi-response cross-check ---
 	mYmine = BigRiverEssence.plskern(X, Y; nlv = nlv)
-	BYmine, _ = BigRiverEssence.plskerncoef(mYmine)
+	BYmine, _ = BigRiverEssence.plskern_coef(mYmine)
 	@test maximum(abs.(BYmine .- BY_jc)) < tol_julia
 end

@@ -23,7 +23,7 @@
 	Y = randn(dy, n)         # variables × observations
 	m = BigRiverEssence.scca(X, Y; penaltyx = 0.3, penaltyz = 0.3, K = K)
 
-	@test m isa BigRiverEssence.sccaStructure
+	@test m isa BigRiverEssence.SccaStructure
 	@test size(m.u) == (dx, K)                 # X canonical vectors, one column per component
 	@test size(m.v) == (dy, K)                 # Y canonical vectors
 	@test length(m.d) == K                     # the per-component weights
@@ -86,7 +86,7 @@ end
 	Y = randn(15, 80)       # X deliberately off-scale
 	ms = BigRiverEssence.scca(X, Y; K = 1, standardize = true)
 	mn = BigRiverEssence.scca(X, Y; K = 1, standardize = false)
-	@test ms isa BigRiverEssence.sccaStructure && mn isa BigRiverEssence.sccaStructure   # both paths produce a valid fit
+	@test ms isa BigRiverEssence.SccaStructure && mn isa BigRiverEssence.SccaStructure   # both paths produce a valid fit
 end
 
 @testset "argument validation" begin

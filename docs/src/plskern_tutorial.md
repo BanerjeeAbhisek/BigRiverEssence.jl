@@ -86,14 +86,14 @@ centering means and scales.
 ```
 
 
-## Predicting with `plskernpredict`
+## Predicting with `plskern_predict`
 
 We now predict octane for the held-out samples in the test set and compare with the measured values.
 
 
 
 ```@example pmd
-ŷ = plskernpredict(m, Xte)
+ŷ = plskern_predict(m, Xte)
 
 rmse = sqrt(mean((vec(ŷ) .- vec(yte)).^2))     # test-set prediction error
 @show rmse
@@ -108,9 +108,9 @@ plot!(collect(lims), collect(lims); color = :black, linestyle = :dash)
 We see from the above plot that the predicted octane values fall veryclose to the dashed $45°$ line of perfect prediction. We also get a test-set RMSE of about 0.1822 octane units. This shows a good calibration from spectra alone, on samples the model never saw during fitting.
 
 
-## The regression coefficients with `plskerncoef`
+## The regression coefficients with `plskern_coef`
 
-The function `plskerncoef` is used for assembling the coefficient vector $B$ and intercept that map a raw
+The function `plskern_coef` is used for assembling the coefficient vector $B$ and intercept that map a raw
 spectrum directly to a predicted octane. We can  plot $B$ against wavelength to see which
 spectral regions drive the prediction.
 
@@ -118,7 +118,7 @@ spectral regions drive the prediction.
 
 
 ```@example pmd
-B, intercept = plskerncoef(m)
+B, intercept = plskern_coef(m)
 
 plot(wl, vec(B); legend = false,
     xlabel = "wavelength (nm)", ylabel = "regression coefficient",
@@ -130,15 +130,15 @@ we see from the plot that most wavelengths carry small coefficients, with few hi
 regions are most informative about octane. This is the interpretable payoff of a linear
 calibration where the coefficients point back to the chemistry. 
 
-## Projecting with `plskerntransform`
+## Projecting with `plskern_transform`
 
-The other function `plskerntransform` is used for projecting samples onto the PLS latent space or their scores. If we color
+The other function `plskern_transform` is used for projecting samples onto the PLS latent space or their scores. If we color
 the scores by octane, it will shows that the components are organized around the response. This is the
 supervised counterpart to the variance-only components of PCA.
 
 
 ```@example pmd
-Ttr = plskerntransform(m, Xtr)
+Ttr = plskern_transform(m, Xtr)
 
 scatter(Ttr[:, 1], Ttr[:, 2]; zcolor = vec(ytr), colorbar = true, legend = false,
     xlabel = "PLS score 1", ylabel = "PLS score 2",

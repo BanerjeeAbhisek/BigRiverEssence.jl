@@ -1,5 +1,5 @@
 """
-	sccaStructure{T}
+	SccaStructure{T}
 
 Container for a fitted sparse canonical correlation analysis, as returned by `scca`
 # Fields
@@ -13,7 +13,7 @@ Container for a fitted sparse canonical correlation analysis, as returned by `sc
 - `penaltyz::Float64`: The L1 penalty applied to the Y vectors, in (0,1]
 - `K::Int`: The number of components
 """
-struct sccaStructure{T}
+struct SccaStructure{T}
 	u::Matrix{T}
 	v::Matrix{T}
 	d::Vector{T}
@@ -280,7 +280,7 @@ variables, after Witten, Tibshirani & Hastie (2009)
 - `standardize::Bool`: Whether to center and scale each variable to unit variance
   before fitting. Defaults to true
 # Value
-An `sccaStructure` holding the sparse X and Y canonical vectors (u, v), the
+An `SccaStructure` holding the sparse X and Y canonical vectors (u, v), the
 component weights d, the sample correlations of the paired variates, the penalties,
 and K. Sparse CCA finds pairs of sparse vectors, one in X-space and one in Y-space,
 whose projected variates are maximally correlated under an L1 penalty (so each
@@ -357,5 +357,5 @@ function scca(X::Matrix{Float64}, Y::Matrix{Float64};
 		end
 	end
 
-	return sccaStructure(U, V, D, C, Float64(penaltyx), Float64(penaltyz), K)
+	return SccaStructure(U, V, D, C, Float64(penaltyx), Float64(penaltyz), K)
 end

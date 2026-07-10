@@ -1,5 +1,5 @@
 """
-	pcaStructure{T}
+	PcaStructure{T}
 
 Container for a fitted PCA model, as returned by `pca`
 # Fields
@@ -15,7 +15,7 @@ Container for a fitted PCA model, as returned by `pca`
 - `propOFvar::Vector{T}`: The proportion of total variance explained by each
   component (variances ./ total variance)
 """
-struct pcaStructure{T}
+struct PcaStructure{T}
 	mean::Vector{T}
 	scale::Vector{T}
 	loadings::Matrix{T}
@@ -24,17 +24,17 @@ struct pcaStructure{T}
 end
 
 """
-	pca_transform(m::pcaStructure, X::Matrix{Float64})
+	pca_transform(m::PcaStructure, X::Matrix{Float64})
 
 Project data onto the principal directions of a fitted PCA model
 # Arguments
-- `m::pcaStructure`: A fitted PCA model, as returned by `pca`
+- `m::PcaStructure`: A fitted PCA model, as returned by `pca`
 - `X::Matrix{Float64}`: 2d array of floats; the observations (rows) by features
   (columns) to project, with the same features as the training data
 # Value
 2d array of floats; the n×k matrix of principal-component scores
 """
-function pca_transform(m::pcaStructure, X::Matrix{Float64})
+function pca_transform(m::PcaStructure, X::Matrix{Float64})
 	# Apply the SAME centering and scaling the model learned, then project. Using
 	# the stored stats (not X's own mean/std) is what makes this valid for new data.
 	Xcentered = (X .- m.mean') ./ m.scale'
@@ -42,11 +42,11 @@ function pca_transform(m::pcaStructure, X::Matrix{Float64})
 end
 
 """
-	pca_invtransform(m::pcaStructure, scores::Matrix{Float64})
+	pca_invtransform(m::PcaStructure, scores::Matrix{Float64})
 
 Reconstruct data in the original feature space from principal-component scores
 # Arguments
-- `m::pcaStructure`: A fitted PCA model, as returned by `pca`
+- `m::PcaStructure`: A fitted PCA model, as returned by `pca`
 - `scores::Matrix{Float64}`: 2d array of floats; the n×k matrix of
   principal-component scores to invert, with k matching the number of components
   retained in `m`
@@ -54,7 +54,7 @@ Reconstruct data in the original feature space from principal-component scores
 2d array of floats; the n×p reconstruction in the original units. Exact only
 when all components are retained (k = p); otherwise a low-rank approximation
 """
-function pca_invtransform(m::pcaStructure, scores::Matrix{Float64})
+function pca_invtransform(m::PcaStructure, scores::Matrix{Float64})
 	# Reverse the forward transform in reverse order: undo the projection first
 	# (scores → centered feature space), then undo scaling, then undo centering.
 	Xcentered = scores * m.loadings'
@@ -75,7 +75,7 @@ Fit a principal component analysis (PCA) model
   `:cov` (eigendecomposition of the p×p covariance), or `:svd` (SVD of the centered
   data). Defaults to `:auto`
 # Value
-A `pcaStructure` holding the column means, scales, k loadings, component variances,
+A `PcaStructure` holding the column means, scales, k loadings, component variances,
 and proportion of variance explained
 """
 function pca(X::Matrix{Float64}; k::Int = minimum(size(X)),
@@ -140,7 +140,7 @@ function pca(X::Matrix{Float64}; k::Int = minimum(size(X)),
 		end
 	end
 
-	sign_consistency_opt!(loadings)                            # pin each PC's arbitrary sign for reproducibility
+	_sign_consistency_opt!(loadings)                            # pin each PC's arbitrary sign for reproducibility
 	scale_out = standardize ? colstds : ones(Float64, p)      # store ones when not standardizing
-	return pcaStructure{Float64}(colmeans, scale_out, loadings, vars, vars ./ total)
+	return PcaStructure{Float64}(colmeans, scale_out, loadings, vars, vars ./ total)
 end

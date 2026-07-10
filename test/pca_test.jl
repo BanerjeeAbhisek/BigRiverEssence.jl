@@ -14,7 +14,7 @@ loaddiff(A, B) = maximum(norm(abs.(A[:, j]) .- abs.(B[:, j])) for j in 1:size(A,
 	X = randn(n, p)
 	m = pca(X; k = k, method = :svd)
 
-	@test m isa pcaStructure
+	@test m isa PcaStructure
 	@test length(m.mean) == p          # one mean per feature
 	@test length(m.scale) == p          # one scale per feature
 	@test size(m.loadings) == (p, k)     # p features × k components
@@ -116,7 +116,7 @@ end
 end
 
 @testset "sign consistency" begin
-	# Loading signs are arbitrary, so we canonicalize them: sign_consistency_opt!
+	# Loading signs are arbitrary, so we canonicalize them: _sign_consistency_opt!
 	# flips each column so its largest-magnitude entry is positive. This makes
 	# results reproducible run-to-run and comparable across implementations.
 	Random.seed!(5)

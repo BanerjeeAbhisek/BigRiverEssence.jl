@@ -1,5 +1,5 @@
 """
-	pmdStructure{T}
+	PmdStructure{T}
 
 Container for a fitted penalized matrix decomposition, as returned by `pmd`
 # Fields
@@ -11,7 +11,7 @@ Container for a fitted penalized matrix decomposition, as returned by `pmd`
 - `K::Int`: The number of components
 - `meanx::Float64`: The grand mean removed during centering, or NaN if center=false
 """
-struct pmdStructure{T}
+struct PmdStructure{T}
 	u::Matrix{T}
 	v::Matrix{T}
 	d::Vector{T}
@@ -275,7 +275,7 @@ Fit a penalized matrix decomposition with L1 penalties on both factors, PMD(L1,L
 - `center::Bool`: Whether to subtract the grand mean of `X` before decomposing.
   Defaults to true
 # Value
-A `pmdStructure` holding the n×K left factors u, the p×K right factors v, the K
+A `PmdStructure` holding the n×K left factors u, the p×K right factors v, the K
 weights d, the resolved budgets su and sv, the number of components K, and the
 grand mean removed (or NaN when center=false)
 """
@@ -323,5 +323,5 @@ function pmd(X::Matrix{Float64}; sumabs::Real = 0.4,
 		BLAS.ger!(-d, u, v, R)                    # rank-1 deflation: R ← R − d·u·vᵀ
 	end
 
-	return pmdStructure(U, V, D, su, sv, K, center ? meanx : NaN)
+	return PmdStructure(U, V, D, su, sv, K, center ? meanx : NaN)
 end

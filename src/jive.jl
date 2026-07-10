@@ -1,5 +1,5 @@
 """
-	jiveStructure{T}
+	JiveStructure{T}
 
 Container for a fitted JIVE (Joint and Individual Variation Explained)
 decomposition, as returned by `jive`
@@ -17,7 +17,7 @@ decomposition, as returned by `jive`
 - `r::Int`: The joint rank (dimension of the shared structure)
 - `ri::Vector{Int}`: The individual ranks, one per block
 """
-struct jiveStructure{T}
+struct JiveStructure{T}
 	J::Vector{Matrix{T}}
 	A::Vector{Matrix{T}}
 	S::Matrix{T}
@@ -29,7 +29,7 @@ struct jiveStructure{T}
 end
 
 """
-	safe_svd(A)
+	_safe_svd(A)
 
 Compute an SVD, falling back to a slower but more robust algorithm if the
 default one fails to converge
@@ -41,7 +41,7 @@ if it raises a `LAPACKException` (a convergence failure on certain ill-condition
 inputs), retries with the QR-iteration algorithm, which is slower but more stable.
 Any other error is rethrown
 """
-function safe_svd(A)
+function _safe_svd(A)
 	try
 		return svd(A)
 	catch e
@@ -51,17 +51,17 @@ function safe_svd(A)
 end
 
 """
-	safe_svdvals(A)
+	__safe_svdvals(A)
 
 Compute singular values, falling back to a more robust algorithm if the default
 one fails to converge
 # Arguments
 - `A`: 2d array of floats; the matrix whose singular values are wanted
 # Value
-A vector of singular values. Like `safe_svd`, retries with QR iteration on a
+A vector of singular values. Like `_safe_svd`, retries with QR iteration on a
 `LAPACKException` and rethrows anything else
 """
-function safe_svdvals(A)
+function __safe_svdvals(A)
 	try
 		return svdvals(A)
 	catch e
@@ -71,9 +71,9 @@ function safe_svdvals(A)
 end
 
 """
-	safe_svd!(A)
+	__safe_svd!(A)
 
-In-place variant of `safe_svd`: compute an SVD, overwriting `A`, with a robust
+In-place variant of `_safe_svd`: compute an SVD, overwriting `A`, with a robust
 fallback on convergence failure
 # Arguments
 - `A`: 2d array of floats; the matrix to decompose, OVERWRITTEN in place by the
@@ -83,7 +83,7 @@ An `SVD` factorization object. Tries the in-place `svd!` first; on a
 `LAPACKException` retries with the (non-mutating) QR-iteration SVD. Used in the
 inner JIVE iterations where the input is scratch that can be destroyed
 """
-function safe_svd!(A)
+function __safe_svd!(A)
 	try
 		return svd!(A)
 	catch e
@@ -108,7 +108,7 @@ alternating between estimating the joint and individual structure
   iterations
 - `maxiter::Int`: The maximum number of outer iterations
 # Value
-A `jiveStructure` with the joint (J, S, U) and individual (A, Si, Wi) parts.
+A `JiveStructure` with the joint (J, S, U) and individual (A, Si, Wi) parts.
 Implements the r.jive "orthIndiv" algorithm of Lock et al. (2013): wide blocks
 are first compressed to their score space (via SVD) for efficiency, then the
 joint structure is the rank-r SVD of the stacked residual (data minus individual),
@@ -128,7 +128,7 @@ function _jive_rjive_core_opt2(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::
 	Xr   = Vector{Matrix{T_}}(undef, k)
 	for i in 1:k
 		if size(Xc[i], 1) > size(Xc[i], 2)
-			F = safe_svd(Xc[i]);
+			F = _safe_svd(Xc[i]);
 			nc = size(Xc[i], 2)
 			Xr[i] = Diagonal(F.S[1:nc]) * F.Vt[1:nc, :]    # compressed block (nc×n)
 			Ubig[i] = F.U[:, 1:nc]                          # back-projection to original rows
@@ -177,7 +177,7 @@ function _jive_rjive_core_opt2(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::
 		#  joint update: rank-r SVD of (stacked data − individual) 
 		if r > 0
 			@. tmpJ = Xtot - Atot
-			s = safe_svd!(tmpJ)
+			s = __safe_svd!(tmpJ)
 			@views mul!(USj, s.U[:, 1:r], Diagonal(s.S[1:r]))
 			@views mul!(Jtot, USj, s.Vt[1:r, :])             # joint = rank-r truncation
 			@views copyto!(V, transpose(s.Vt[1:r, :]))       # the joint row space
@@ -206,7 +206,7 @@ function _jive_rjive_core_opt2(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::
 						mul!(tmp, pj, transpose(Vj), -1.0, 1.0)    # remove other blocks' individual spaces
 					end
 				end
-				s = safe_svd!(tmp)
+				s = __safe_svd!(tmp)
 				@views copyto!(Vind[i], transpose(s.Vt[1:ri[i], :]))
 				@views mul!(A[i], s.U[:, 1:ri[i]] * Diagonal(s.S[1:ri[i]]), s.Vt[1:ri[i], :])
 			else
@@ -225,7 +225,7 @@ function _jive_rjive_core_opt2(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::
 			end
 			for i in 1:k
 				if ri[i] > 0
-					s = safe_svd(A[i])
+					s = _safe_svd(A[i])
 					@views copyto!(Vind[i], transpose(s.Vt[1:ri[i], :]))
 				end
 			end
@@ -245,7 +245,7 @@ function _jive_rjive_core_opt2(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::
 	# map the compressed J, A back to the original row space and factor each part
 	Jfull = [Ubig[i] * J[i] for i in 1:k]
 	Afull = [Ubig[i] * A[i] for i in 1:k]
-	Fj = safe_svd(reduce(vcat, Jfull))
+	Fj = _safe_svd(reduce(vcat, Jfull))
 	S = Matrix(@view Fj.Vt[1:r, :])                  # joint scores (orthonormal rows)
 	pis_full = [size(Ji, 1) for Ji in Jfull]
 	Ufull = Fj.U[:, 1:r] * Diagonal(Fj.S[1:r])
@@ -259,11 +259,11 @@ function _jive_rjive_core_opt2(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::
 	Si = Matrix{T_}[];
 	Wi = Matrix{T_}[]
 	for i in 1:k
-		Fi = safe_svd(Afull[i])
+		Fi = _safe_svd(Afull[i])
 		push!(Si, Matrix(@view Fi.Vt[1:ri[i], :]))                   # individual scores
 		push!(Wi, Fi.U[:, 1:ri[i]] * Diagonal(Fi.S[1:ri[i]]))         # individual loadings
 	end
-	return jiveStructure{T_}(Jfull, Afull, S, U, Si, Wi, r, ri)
+	return JiveStructure{T_}(Jfull, Afull, S, U, Si, Wi, r, ri)
 end
 
 """
@@ -311,7 +311,7 @@ function _jive_perm_ranks_opt(Xc::Vector{Matrix{Float64}}, n::Int;
 		#  joint rank: compare actual SVs of the stacked (data − individual)
 		#     against a column-permuted null (permuting breaks shared structure) 
 		full = [Xc[i] .- Aperp[i] for i in 1:k]
-		actual = safe_svdvals(reduce(vcat, full))
+		actual = __safe_svdvals(reduce(vcat, full))
 		nsv = min(n, ptot)
 		perms = zeros(nperm, nsv)
 		rowr = (
@@ -330,7 +330,7 @@ function _jive_perm_ranks_opt(Xc::Vector{Matrix{Float64}}, n::Int;
 				randperm!(permcols)                          # permute each block's columns independently
 				@views fullstack[rowr[i], :] .= full[i][:, permcols]
 			end
-			sv = safe_svdvals(fullstack)
+			sv = __safe_svdvals(fullstack)
 			m = min(length(sv), nsv)
 			@views perms[p, 1:m] .= sv[1:m]
 		end
@@ -344,7 +344,7 @@ function _jive_perm_ranks_opt(Xc::Vector{Matrix{Float64}}, n::Int;
 		for i in 1:k
 			ind = Xc[i] .- Jperp[i]
 			pi_ = size(ind, 1)
-			actual_i = safe_svdvals(ind)
+			actual_i = __safe_svdvals(ind)
 			nsv_i = min(n, pi_)
 			perms_i = zeros(nperm, nsv_i)
 			permbuf = Matrix{Float64}(undef, pi_, n)
@@ -353,7 +353,7 @@ function _jive_perm_ranks_opt(Xc::Vector{Matrix{Float64}}, n::Int;
 					randperm!(permcols)                      # permute within each row
 					@views permbuf[row, :] .= ind[row, permcols]
 				end
-				sv = safe_svdvals(permbuf)
+				sv = __safe_svdvals(permbuf)
 				m = min(length(sv), nsv_i)
 				@views perms_i[p, 1:m] .= sv[1:m]
 			end
@@ -399,7 +399,7 @@ data blocks sharing a common set of observations
   Defaults to 100
 - `alpha::Float64`: The significance level for the rank test. Defaults to 0.05
 # Value
-A `jiveStructure` with the joint and individual decompositions. Each block is
+A `JiveStructure` with the joint and individual decompositions. Each block is
 first row-centered and Frobenius-scaled so no block dominates by sheer magnitude.
 If the joint and individual ranks are not supplied, they are estimated by a
 permutation test; the decomposition is then computed by alternating between
@@ -448,7 +448,7 @@ individual ranks `ri` directly
 - `ri::Vector{Int}`: The individual ranks, one per block
 - `kwargs...`: Any keyword arguments accepted by the keyword form of `jive`
 # Value
-A `jiveStructure`; identical to calling `jive(Xs; r = r, ri = ri, kwargs...)`
+A `JiveStructure`; identical to calling `jive(Xs; r = r, ri = ri, kwargs...)`
 """
 jive(Xs::Vector{Matrix{Float64}}, r::Int, ri::Vector{Int}; kwargs...) =
 	jive(Xs; r = r, ri = ri, kwargs...)

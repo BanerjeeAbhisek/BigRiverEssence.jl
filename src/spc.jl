@@ -1,5 +1,5 @@
 """
-	spcStructure{T}
+	SpcStructure{T}
 
 Container for a fitted sparse principal component analysis, as returned by
 `spc` or `spc_orth`
@@ -9,13 +9,13 @@ Container for a fitted sparse principal component analysis, as returned by
 - `scale::Vector{T}`: The column scales (length p) — the column standard
   deviations when `standardize=true`, otherwise ones
 - `loadings::Matrix{T}`: The p×k sparse loadings (one unit-ℓ₂, L1-penalized
-  column per component), signs fixed by `sign_consistency_opt!`
+  column per component), signs fixed by `_sign_consistency_opt!`
 - `variances::Vector{T}`: The variance associated with each of the k components
   (dₖ² / (n-1), where dₖ is the component weight)
 - `propOFvar::Vector{T}`: The cumulative proportion of variance explained by the
-  first k components (see `prop_var_explained`)
+  first k components (see `_prop_var_explained`)
 """
-struct spcStructure{T}
+struct SpcStructure{T}
 	mean::Vector{T}
 	scale::Vector{T}
 	loadings::Matrix{T}
@@ -24,7 +24,7 @@ struct spcStructure{T}
 end
 
 """
-	l1_diff(a, b)
+	_l1_diff(a, b)
 
 Compute the ℓ₁ distance between two vectors
 # Arguments
@@ -33,7 +33,7 @@ Compute the ℓ₁ distance between two vectors
 # Value
 Float; ‖a − b‖₁. Used as the convergence criterion between successive iterates
 """
-function l1_diff(a, b)
+function _l1_diff(a, b)
 	s = zero(eltype(a))
 	@inbounds @simd for i in eachindex(a)
 		s += abs(a[i] - b[i])
@@ -42,7 +42,7 @@ function l1_diff(a, b)
 end
 
 """
-	finding_v!(v, s, z, c)
+	_finding_v!(v, s, z, c)
 
 Project a vector onto the intersection of the unit ℓ₂ ball and the L1 budget,
 writing the result in place
@@ -59,7 +59,7 @@ returned unchanged; otherwise a soft-threshold δ is found by bisection (up to 1
 steps) so that the normalized, thresholded vector has ‖v‖₁ ≈ c. This is the
 penalized update of the SPC criterion in Witten, Tibshirani & Hastie (2009)
 """
-function finding_v!(v, s, z, c)
+function _finding_v!(v, s, z, c)
 	Tz = eltype(z)
 	nz = norm(z);
 	iszero(nz) && (nz = Tz(0.05))
@@ -80,7 +80,7 @@ function finding_v!(v, s, z, c)
 end
 
 """
-	init_rsv(Xc, k::Int)
+	_init_rsv(Xc, k::Int)
 
 Compute the top-k right singular vectors of a centered data matrix, used to
 initialize the sparse power iteration
@@ -94,7 +94,7 @@ the p×p Gram matrix XcᵀXc directly, otherwise it eigendecomposes the n×n Gra
 matrix XcXcᵀ and back-projects. Both use a partial eigendecomposition (only the
 top k eigenpairs) and return columns in descending eigenvalue order
 """
-function init_rsv(Xc, k)
+function _init_rsv(Xc, k)
 	n, p = size(Xc);
 	T = eltype(Xc)
 	if p <= n
@@ -113,7 +113,7 @@ function init_rsv(Xc, k)
 end
 
 """
-	prop_var_explained(Xc, V)
+	_prop_var_explained(Xc, V)
 
 Compute the cumulative proportion of variance explained by sparse components
 # Arguments
@@ -128,7 +128,7 @@ orthonormal, the adjusted variance uses the projection ‖Xc·Vₖ(VₖᵀVₖ)�
 ‖Xc‖²_F. This is the adjusted-variance measure of Shen & Huang / Witten et al.
 for non-orthogonal sparse PCs
 """
-function prop_var_explained(Xc, V)
+function _prop_var_explained(Xc, V)
 	K = size(V, 2);
 	T = eltype(Xc)
 	totsq = sum(abs2, Xc)
@@ -143,7 +143,7 @@ function prop_var_explained(Xc, V)
 end
 
 """
-	spca_component!(v, X, c, u, Xv, Xtu, s, vold; tol = 1e-7, niter = 20)
+	_spca_component!(v, X, c, u, Xv, Xtu, s, vold; tol = 1e-7, niter = 20)
 
 Compute one sparse principal component by soft-thresholded power iteration
 (deflation variant)
@@ -155,7 +155,7 @@ Compute one sparse principal component by soft-thresholded power iteration
 - `u`: 1d array of floats; preallocated buffer for the left factor (scores direction)
 - `Xv`: 1d array of floats; preallocated scratch of length n
 - `Xtu`: 1d array of floats; preallocated scratch of length p
-- `s`: 1d array of floats; preallocated scratch for `finding_v!`
+- `s`: 1d array of floats; preallocated scratch for `_finding_v!`
 - `vold`: 1d array of floats; preallocated scratch holding the previous v iterate
 - `tol`: Float; the ℓ₁ convergence tolerance on v. Defaults to 1e-7
 - `niter::Int`: The maximum number of power-iteration steps. Defaults to 20
@@ -163,9 +163,9 @@ Compute one sparse principal component by soft-thresholded power iteration
 Float; the component weight d = uᵀ X v. On return `v` holds the unit-ℓ₂,
 L1-penalized loading and `u` the corresponding unit-ℓ₂ scores direction. Each
 step sets u ← normalize(X v) then v ← project(Xᵀ u) onto the unit ball and L1
-budget via `finding_v!`, the SPC update of Witten, Tibshirani & Hastie (2009)
+budget via `_finding_v!`, the SPC update of Witten, Tibshirani & Hastie (2009)
 """
-function spca_component!(v, X, c, u, Xv, Xtu, s, vold; tol = 1e-7, niter = 20)
+function _spca_component!(v, X, c, u, Xv, Xtu, s, vold; tol = 1e-7, niter = 20)
 	T = eltype(v)
 	for _ in 1:niter
 		copyto!(vold, v)
@@ -174,15 +174,15 @@ function spca_component!(v, X, c, u, Xv, Xtu, s, vold; tol = 1e-7, niter = 20)
 		iszero(nu) && (nu = T(0.05));
 		u ./= nu   # u ← normalize(X v)
 		mul!(Xtu, transpose(X), u)
-		finding_v!(v, s, Xtu, c)                                              # v ← project(Xᵀ u)
-		l1_diff(v, vold) < tol && break
+		_finding_v!(v, s, Xtu, c)                                              # v ← project(Xᵀ u)
+		_l1_diff(v, vold) < tol && break
 	end
 	mul!(Xv, X, v)
 	return dot(u, Xv)                                                         # d = uᵀ X v
 end
 
 """
-	spca_component_orth!(v, X, c, U_prev, u, uold, Xv, Xtu, s, vold, proj;
+	_spca_component_orth!(v, X, c, U_prev, u, uold, Xv, Xtu, s, vold, proj;
 						 tol = 1e-6, niter = 20)
 
 Compute one sparse principal component whose scores are orthogonal to all
@@ -199,20 +199,20 @@ previously extracted components
 - `uold`: 1d array of floats; preallocated scratch holding the previous u iterate
 - `Xv`: 1d array of floats; preallocated scratch of length n
 - `Xtu`: 1d array of floats; preallocated scratch of length p
-- `s`: 1d array of floats; preallocated scratch for `finding_v!`
+- `s`: 1d array of floats; preallocated scratch for `_finding_v!`
 - `vold`: 1d array of floats; preallocated scratch holding the previous v iterate
 - `proj`: 1d array of floats; preallocated scratch for the orthogonal projection
   coefficients
 - `tol`: Float; the ℓ₁ convergence tolerance on u and v. Defaults to 1e-6
 - `niter::Int`: The maximum number of power-iteration steps. Defaults to 20
 # Value
-Float; the component weight d = uᵀ X v. Differs from `spca_component!` by
+Float; the component weight d = uᵀ X v. Differs from `_spca_component!` by
 projecting u onto the orthogonal complement of `U_prev` each iteration
 (u ← u − U_prev U_prevᵀ u before normalizing), which enforces orthogonal scores
 across components instead of relying on deflation — the orthogonal SPC variant of
 Witten, Tibshirani & Hastie (2009)
 """
-function spca_component_orth!(v, X, c, U_prev, u, uold, Xv, Xtu, s, vold, proj;
+function _spca_component_orth!(v, X, c, U_prev, u, uold, Xv, Xtu, s, vold, proj;
 	tol = 1e-6, niter = 20)
 	T = eltype(v);
 	fill!(u, zero(T));
@@ -230,8 +230,8 @@ function spca_component_orth!(v, X, c, U_prev, u, uold, Xv, Xtu, s, vold, proj;
 		iszero(nu) && (nu = T(0.05));
 		u ./= nu
 		mul!(Xtu, transpose(X), u)
-		finding_v!(v, s, Xtu, c)
-		(l1_diff(v, vold) < tol && l1_diff(u, uold) < tol) && break
+		_finding_v!(v, s, Xtu, c)
+		(_l1_diff(v, vold) < tol && _l1_diff(u, uold) < tol) && break
 	end
 	mul!(Xv, X, v)
 	return dot(u, Xv)
@@ -254,7 +254,7 @@ variant)
 - `niter::Int`: The maximum number of power-iteration steps per component.
   Defaults to 20
 # Value
-An `spcStructure` holding the column means, scales, k sparse loadings, component
+An `SpcStructure` holding the column means, scales, k sparse loadings, component
 variances, and cumulative proportion of variance explained. Components are found
 sequentially: each loading is fit on the residual, then removed by rank-1
 deflation before the next is extracted
@@ -271,7 +271,7 @@ function spc(X; k = 2, c = sqrt(size(X, 2)) / 2, standardize = false,
 	# center, and scale too when standardizing — this is the matrix SPC decomposes
 	Xc = standardize ? (X .- means') ./ sigma' : T.(X .- means')
 
-	Vinit = init_rsv(Xc, k)                            # SVD-based starting loadings for all k components
+	Vinit = _init_rsv(Xc, k)                            # SVD-based starting loadings for all k components
 	Rmat  = copy(Xc)                                   # residual matrix, deflated after each component
 
 	# outputs: k loadings (V), k weights (d)
@@ -283,7 +283,7 @@ function spc(X; k = 2, c = sqrt(size(X, 2)) / 2, standardize = false,
 	u = Vector{T}(undef, n);
 	Xv = Vector{T}(undef, n)  # left factor + length-n scratch
 	Xtu = Vector{T}(undef, p);
-	s = Vector{T}(undef, p) # length-p scratch (Xᵀu, and finding_v! workspace)
+	s = Vector{T}(undef, p) # length-p scratch (Xᵀu, and _finding_v! workspace)
 	vold = Vector{T}(undef, p);
 	v = Vector{T}(undef, p)# current loading + its previous iterate
 
@@ -291,15 +291,15 @@ function spc(X; k = 2, c = sqrt(size(X, 2)) / 2, standardize = false,
 		copyto!(v, view(Vinit, :, j))                  # warm-start this component at its SVD direction
 		# solve for the j-th sparse rank-1 factor on the current residual;
 		# returns the weight d[j], leaves the loading in v and scores dir in u
-		d[j] = spca_component!(v, Rmat, c, u, Xv, Xtu, s, vold; tol = tol, niter = niter)
+		d[j] = _spca_component!(v, Rmat, c, u, Xv, Xtu, s, vold; tol = tol, niter = niter)
 		@views V[:, j] .= v                            # store the loading
 		BLAS.ger!(-d[j], u, v, Rmat)                   # rank-1 deflation: Rmat ← Rmat − d·u·vᵀ
 	end                                                # so the next component sees only what's left
 
-	sign_consistency_opt!(V)                            # fix arbitrary per-column signs for reproducibility
+	_sign_consistency_opt!(V)                            # fix arbitrary per-column signs for reproducibility
 	vars = d .^ 2 ./ (n - 1)                           # variance carried by each component (dₖ² / (n-1))
 	# PVE uses the adjusted-variance measure since sparse loadings aren't orthonormal
-	return spcStructure{T}(means, sigma, V, vars, prop_var_explained(Xc, V))
+	return SpcStructure{T}(means, sigma, V, vars, _prop_var_explained(Xc, V))
 end
 
 """
@@ -319,7 +319,7 @@ variant of the SPC criterion)
 - `niter::Int`: The maximum number of power-iteration steps per component.
   Defaults to 20
 # Value
-An `spcStructure` holding the column means, scales, k sparse loadings, component
+An `SpcStructure` holding the column means, scales, k sparse loadings, component
 variances, and cumulative proportion of variance explained. Unlike `spc`, each
 component's scores are constrained to be orthogonal to all previous components'
 scores (via projection rather than deflation), so the score directions form an
@@ -337,7 +337,7 @@ function spc_orth(X; k = 2, c = sqrt(size(X, 2)) / 2, standardize = false,
 	# center, and scale too when standardizing — this is the matrix SPC decomposes
 	Xc = standardize ? (X .- means') ./ sigma' : T.(X .- means')
 
-	Vinit = init_rsv(Xc, k)                            # SVD-based starting loadings for all k components
+	Vinit = _init_rsv(Xc, k)                            # SVD-based starting loadings for all k components
 
 	# outputs: k loadings (V), k weights (d), AND the k score directions (U).
 	# unlike spc, U is kept because each new component is orthogonalized against it.
@@ -350,7 +350,7 @@ function spc_orth(X; k = 2, c = sqrt(size(X, 2)) / 2, standardize = false,
 	uold = Vector{T}(undef, n);
 	Xv = Vector{T}(undef, n)  # left factor, its prev iterate, length-n scratch
 	Xtu = Vector{T}(undef, p);
-	s = Vector{T}(undef, p)                             # length-p scratch (Xᵀu, finding_v! workspace)
+	s = Vector{T}(undef, p)                             # length-p scratch (Xᵀu, _finding_v! workspace)
 	vold = Vector{T}(undef, p);
 	v = Vector{T}(undef, p);
 	proj = Vector{T}(undef, k)# current loading, its prev iterate, projection coeffs
@@ -360,14 +360,14 @@ function spc_orth(X; k = 2, c = sqrt(size(X, 2)) / 2, standardize = false,
 		Uprev = @view U[:, 1:(j-1)]                       # scores of all previously extracted components
 		# solve for the j-th sparse factor on the ORIGINAL Xc (not a deflated residual),
 		# but force its scores u orthogonal to Uprev inside the core. returns weight d[j].
-		d[j] = spca_component_orth!(v, Xc, c, Uprev, u, uold, Xv, Xtu, s, vold, proj;
+		d[j] = _spca_component_orth!(v, Xc, c, Uprev, u, uold, Xv, Xtu, s, vold, proj;
 			tol = tol, niter = niter)
 		@views V[:, j] .= v                            # store the loading
 		@views U[:, j] .= u                            # store the scores direction (needed to orthogonalize later components)
 	end
 
-	sign_consistency_opt!(V)                            # fix arbitrary per-column signs for reproducibility
+	_sign_consistency_opt!(V)                            # fix arbitrary per-column signs for reproducibility
 	vars = d .^ 2 ./ (n - 1)                           # variance carried by each component (dₖ² / (n-1))
 	# PVE uses the adjusted-variance measure since sparse loadings aren't orthonormal
-	return spcStructure{T}(means, sigma, V, vars, prop_var_explained(Xc, V))
+	return SpcStructure{T}(means, sigma, V, vars, _prop_var_explained(Xc, V))
 end
