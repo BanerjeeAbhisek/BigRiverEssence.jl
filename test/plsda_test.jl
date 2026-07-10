@@ -13,7 +13,7 @@
 	X = randn(n, p)
 	m = BigRiverEssence.plsda(X, y, ncomp)
 
-	@test m isa BigRiverEssence.PlsdaStructure
+	@test m isa BigRiverEssence.Plsda
 	@test size(m.variates_X) == (n, ncomp)        # X scores
 	@test size(m.variates_Y) == (n, ncomp)        # Y scores
 	@test size(m.loadings_X) == (p, ncomp)        # dense X loadings

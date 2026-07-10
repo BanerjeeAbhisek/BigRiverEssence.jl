@@ -33,7 +33,7 @@ projdiff(A, B) = maximum(norm(abs.(@view A[:, j]) .- abs.(@view B[:, j])) for j 
 	p = min(dx, dy)                            # at most min(dx,dy) canonical pairs
 	M = BigRiverEssence.cca(X, Y; method = :svd)
 
-	@test M isa BigRiverEssence.CcaStructure
+	@test M isa BigRiverEssence.Cca
 	@test length(M.xmean) == dx && length(M.ymean) == dy   # one mean per variable
 	@test size(M.xproj) == (dx, p)             # dx variables × p canonical directions
 	@test size(M.yproj) == (dy, p)
@@ -158,7 +158,7 @@ end
 	xm = vec(mean(X, dims = 2));
 	ym = vec(mean(Y, dims = 2))
 	M = BigRiverEssence._cca_svd_opt(copy(X) .- xm, copy(Y) .- ym, xm, ym, min(dx, dy))   # pass pre-centered data
-	@test M isa BigRiverEssence.CcaStructure
+	@test M isa BigRiverEssence.Cca
 	@test issorted(M.corrs; rev = true)
 	@test all(0 .<= M.corrs .<= 1 + tol_ord)
 	@test M.nobs == n                               # the SVD path records the sample size

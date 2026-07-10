@@ -14,7 +14,7 @@ loaddiff(A, B) = maximum(norm(abs.(A[:, j]) .- abs.(B[:, j])) for j in 1:size(A,
 	X = randn(n, p)
 	m = pca(X; k = k, method = :svd)
 
-	@test m isa PcaStructure
+	@test m isa Pca
 	@test length(m.mean) == p          # one mean per feature
 	@test length(m.scale) == p          # one scale per feature
 	@test size(m.loadings) == (p, k)     # p features × k components

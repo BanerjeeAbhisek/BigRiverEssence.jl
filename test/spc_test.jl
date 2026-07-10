@@ -13,7 +13,7 @@
 	X = randn(n, p)
 	m = spc(X; k = k, c = 0.6*sqrt(p))
 
-	@test m isa SpcStructure
+	@test m isa Spc
 	@test size(m.loadings) == (p, k)
 	@test length(m.variances) == k
 	@test length(m.propOFvar) == k
@@ -89,7 +89,7 @@ end
 @testset "spc_orth: scores are orthonormal" begin
 	# The difference between the two variants is in the SCORES. Deflation (spc) leaves
 	# score directions correlated; the orthogonal variant (spc_orth) forces them
-	# orthogonal. SpcStructure doesn't store the scores, so we recompute T = Xc·V and
+	# orthogonal. Spc doesn't store the scores, so we recompute T = Xc·V and
 	# compare off-diagonal score correlations — orth should be ≤ deflation.
 	Random.seed!(5)
 	n, p, k = 100, 50, 4
@@ -376,7 +376,7 @@ end
 		# X.csv is RAW (uncentered) — spc/spc_orth center internally, matching what R did.
 		m  = spc(X; k = K, c = sv)
 		mo = spc_orth(X; k = K, c = sv)
-		# SpcStructure stores variances, not PMA's d; recover d = √(variance·(n−1)) to compare.
+		# Spc stores variances, not PMA's d; recover d = √(variance·(n−1)) to compare.
 		d_jl  = sqrt.(max.(m.variances, 0) .* (n - 1))
 		do_jl = sqrt.(max.(mo.variances, 0) .* (n - 1))
 

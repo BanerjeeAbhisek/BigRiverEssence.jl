@@ -1,5 +1,5 @@
 """
-	SplsdaStructure{T}
+	Splsda{T}
 
 Container for a fitted sparse PLS discriminant analysis, as returned by `splsda`
 # Fields
@@ -13,7 +13,7 @@ Container for a fitted sparse PLS discriminant analysis, as returned by `splsda`
 - `Y_dummy::Matrix{T}`: The n×K one-hot encoding of the class labels
 - `classes::Vector`: The class labels, in the column order of Y_dummy
 """
-struct SplsdaStructure{T}
+struct Splsda{T}
 	variates_X::Matrix{T}
 	variates_Y::Matrix{T}
 	loadings_X::Matrix{T}
@@ -183,7 +183,7 @@ Lê Cao, Boitard & Besse (2011)
 - `levels`: An optional class ordering passed to the dummy encoding; fixes the
   column order of the classes. Defaults to nothing (sorted unique labels)
 # Value
-An `SplsdaStructure` holding the X and Y variates (scores), the sparse X and
+An `Splsda` holding the X and Y variates (scores), the sparse X and
 dense Y loadings, the number of components, the per-component keepX, the one-hot
 class encoding, and the class labels. The class labels are dummy-encoded into an
 indicator matrix and the problem solved as a sparse PLS regression of X onto that
@@ -268,5 +268,5 @@ function splsda(X::Matrix{Float64}, y::Vector, ncomp::Int, keepX::Vector{Int};
 		BLAS.ger!(-1.0, tX, pX, R)                     # R ← R − tX·pₕᵀ
 	end
 
-	return SplsdaStructure(TX, TY, PX, PY, ncomp, keepX, Yd, classes)
+	return Splsda(TX, TY, PX, PY, ncomp, keepX, Yd, classes)
 end

@@ -80,7 +80,7 @@ end
 	d = make_data()
 	m = BigRiverEssence.jive([d.X1, d.X2], d.rT, [d.r1T, d.r2T])
 
-	@test m isa BigRiverEssence.JiveStructure
+	@test m isa BigRiverEssence.Jive
 	@test length(m.J) == 2 && length(m.A) == 2
 	@test size(m.J[1]) == (d.p1, d.n) && size(m.J[2]) == (d.p2, d.n)
 	@test size(m.A[1]) == (d.p1, d.n) && size(m.A[2]) == (d.p2, d.n)
@@ -216,13 +216,13 @@ end
 
 @testset "internal: _jive_rjive_core_opt2 (given-ranks core)" begin
 	# The alternating joint/individual core, called on preprocessed data with the
-	# ranks fixed. Must return a valid JiveStructure with the right ranks, an exactly
+	# ranks fixed. Must return a valid Jive with the right ranks, an exactly
 	# rank-r joint, and the joint ⊥ individual orthogonality (same 1e-4 floor as above).
 	d = make_data()
 	Xc = _preprocess([d.X1, d.X2])
 	conv = 1e-6 * norm(reduce(vcat, Xc))                  # same convergence threshold jive uses
 	m = BigRiverEssence._jive_rjive_core_opt2(Xc, d.n, d.rT, [d.r1T, d.r2T]; conv = conv, maxiter = 1000)
-	@test m isa BigRiverEssence.JiveStructure
+	@test m isa BigRiverEssence.Jive
 	@test m.r == d.rT && m.ri == [d.r1T, d.r2T]
 	sJ = svdvals(reduce(vcat, m.J))
 	@test sJ[d.rT+1] / sJ[1] < tol_ord                  # joint is exactly rank r

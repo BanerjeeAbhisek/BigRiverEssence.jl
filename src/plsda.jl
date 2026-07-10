@@ -1,5 +1,5 @@
 """
-	PlsdaStructure{T}
+	Plsda{T}
 
 Container for a fitted PLS discriminant analysis, as returned by `plsda`.
 # Fields
@@ -11,7 +11,7 @@ Container for a fitted PLS discriminant analysis, as returned by `plsda`.
 - `Y_dummy::Matrix{T}`: n×K one-hot encoding of the labels
 - `classes::Vector`: class labels, in Y_dummy column order
 """
-struct PlsdaStructure{T}
+struct Plsda{T}
 	variates_X::Matrix{T}
 	variates_Y::Matrix{T}
 	loadings_X::Matrix{T}
@@ -105,5 +105,5 @@ function plsda(X::Matrix{Float64}, y::Vector, ncomp::Int;
 		BLAS.ger!(-1.0, tX, cY, Ry)                # Ry ← Ry − tX·cYᵀ
 	end
 
-	return PlsdaStructure(TX, TY, PX, PY, ncomp, Yd, classes)
+	return Plsda(TX, TY, PX, PY, ncomp, Yd, classes)
 end

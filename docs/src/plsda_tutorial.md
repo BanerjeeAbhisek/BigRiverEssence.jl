@@ -56,7 +56,7 @@ m = plsda(X, y, ncomp)
 [count(!iszero, m.loadings_X[:, c]) for c in 1:m.ncomp]
 ```
 
-The fitted `PlsdaStructure` holds the sample scores (`variates_X`), the dense gene
+The fitted `Plsda` holds the sample scores (`variates_X`), the dense gene
 loadings (`loadings_X`), the class labels, and the dummy encoding.
 
 ## Sample plot

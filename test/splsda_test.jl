@@ -18,7 +18,7 @@
 	X = randn(n, p)
 	m = BigRiverEssence.splsda(X, y, ncomp, [10, 10])
 
-	@test m isa BigRiverEssence.SplsdaStructure
+	@test m isa BigRiverEssence.Splsda
 	@test size(m.variates_X) == (n, ncomp)        # X scores (sample coordinates)
 	@test size(m.variates_Y) == (n, ncomp)        # Y scores
 	@test size(m.loadings_X) == (p, ncomp)        # sparse X loadings

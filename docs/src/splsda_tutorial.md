@@ -55,7 +55,7 @@ m = splsda(X, y, ncomp, keepX)
 [count(!iszero, m.loadings_X[:, c]) for c in 1:m.ncomp]
 ```
 
-The fitted `SplsdaStructure` holds the sample scores (`variates_X`), the sparse gene
+The fitted `Splsda` holds the sample scores (`variates_X`), the sparse gene
 loadings (`loadings_X`), the class labels, and the dummy encoding.
 
 ## Sample plot

@@ -12,7 +12,7 @@
 	X = randn(n, p)
 	m = pmd(X; sumabs = 0.4, K = K)
 
-	@test m isa PmdStructure
+	@test m isa Pmd
 	@test size(m.u) == (n, K)          # left factors: one length-n column per component
 	@test size(m.v) == (p, K)          # right factors: one length-p column per component
 	@test length(m.d) == K

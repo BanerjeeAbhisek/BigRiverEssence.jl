@@ -7,31 +7,31 @@ using LinearAlgebra, Statistics, Random
 include("utils.jl")
 
 include("pca.jl")
-export PcaStructure, pca, pca_transform, pca_invtransform
+export Pca, pca, pca_transform, pca_invtransform
 
 include("pmd.jl")
-export PmdStructure, pmd
+export Pmd, pmd
 
 include("spc.jl")
-export SpcStructure, spc, spc_orth
+export Spc, spc, spc_orth
 
 include("plskern.jl")
-export PlskernStructure, plskern, plskern_coef, plskern_predict, plskern_transform
+export Plskern, plskern, plskern_coef, plskern_predict, plskern_transform
 
 include("jive.jl")
-export JiveStructure, jive
+export Jive, jive
 
 include("plsda.jl")
-export PlsdaStructure, plsda
+export Plsda, plsda
 
 include("splsda.jl")
-export SplsdaStructure, splsda
+export Splsda, splsda
 
 include("cca.jl")
-export CcaStructure, cca, cca_transform
+export Cca, cca, cca_transform
 
 include("scca.jl")
-export SccaStructure, scca
+export Scca, scca
 
 
 

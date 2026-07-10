@@ -9,31 +9,33 @@
 
 ## Description
 
+> **Why “Essence”?** The name reflects the package’s goal of reducing large, high-dimensional data matrices to their essential structure through matrix decomposition and dimension reduction.
 
-This package provides efficient implementations of matrix decomposition
-and multivariate dimension reduction methods, including Principal
-Component Analysis (PCA)[^1], Sparse Principal Component Analysis
-(SPCA)[^2], Penalized Matrix Decomposition (PMD)[^2], Canonical
-Correlation Analysis (CCA)[^3], Sparse Canonical Correlation Analysis
-(SCCA)[^4], Joint and Individual Variation Explained (JIVE)[^5],
-Sparse Partial Least Squares Discriminant Analysis (SPLSDA)[^6][^7], and
-Partial Least Squares Kernel Regression (PLSkern)[^8].
+BigRiverEssence provides different methods for capturing the essential structure 
+of high-dimensional data matrices. It provides a broad range of methods, from standard 
+techniques to specialized algorithms for sparse, supervised, and integrative analyses.
 
-These methods are useful for extracting low-dimensional structure from
-high-dimensional data, identifying sparse latent components, and
-analyzing shared and individual variation across multiple datasets.
-The package is intended for high-dimensional applications such as
-high-throughput biological data.
+These methods can be used to extract low-dimensional structure, identify sparse latent components, 
+and characterize shared and dataset-specific variation across multiple data sources. The package 
+is designed for high-dimensional applications, particularly high-throughput biological and omics 
+data.
 
-The core routines rely on matrix operations for fast computation and
-are designed to support exploratory data analysis, feature extraction,
-and integrative analysis of complex datasets.
+The core routines are implemented with computational efficiency in mind, with an emphasis on 
+reducing memory usage and unnecessary allocations. They rely primarily on optimized matrix 
+operations to support fast exploratory data analysis, feature extraction, supervised dimension 
+reduction, and integrative analysis of complex datasets.
 
+The package currently includes the following methods:
 
-
-
-
-
+* Principal Component Analysis (PCA)[^1]
+* Sparse Principal Component Analysis (SPCA)[^2]
+* Penalized Matrix Decomposition (PMD)[^2]
+* Canonical Correlation Analysis (CCA)[^3]
+* Sparse Canonical Correlation Analysis (SCCA)[^4]
+* Joint and Individual Variation Explained (JIVE)[^5]
+* Partial Least Squares Discriminant Analysis (PLSDA)[^6]
+* Sparse Partial Least Squares Discriminant Analysis (SPLSDA)[^7][^8]
+* Partial Least Squares Kernel Regression (PLSkern)[^9]
 
 ## Installation 
 
@@ -58,7 +60,8 @@ Pkg.add(url = "https://github.com/senresearch/BigRiverEssence.jl", rev="main")
 
 ## Contributing
 
-We appreciate contributions from users including reporting bugs, fixing issues, improving performance and adding new features.
+We welcome contributions that improve documentation, performance, testing, and functionality. 
+Users can contribute by opening an issue or submitting a pull request.
 
 ## Questions
 
@@ -77,9 +80,11 @@ If you have questions about contributing or using `BigRiverEssence` package, ple
 
 [^5]: Lock, E. F., Hoadley, K. A., Marron, J. S., & Nobel, A. B. (2013). *Joint and Individual Variation Explained (JIVE) for Integrated Analysis of Multiple Data Types*. Annals of Applied Statistics, 7(1), 523–542.
 
-[^6]: Lê Cao, K.-A., Boitard, S., & Besse, P. (2011). *Sparse PLS Discriminant Analysis: Biologically Relevant Feature Selection and Graphical Displays for Multiclass Problems*. BMC Bioinformatics, 12, 253. 
+[^6]: Pérez-Enciso, M., Tenenhaus, M. Prediction of clinical outcome with microarray data: a partial least squares discriminant analysis (PLS-DA) approach. Hum Genet 112, 581–592 (2003). https://doi.org/10.1007/s00439-003-0921-9
 
-[^7]: Lê Cao, K.-A., Rossouw, D., Robert-Granié, C., & Besse, P. (2008). *A Sparse PLS for Variable Selection when Integrating Omics Data*. Statistical Applications in Genetics and Molecular Biology, 7(1), Article 35. 
+[^7]: Lê Cao, K.-A., Boitard, S., & Besse, P. (2011). *Sparse PLS Discriminant Analysis: Biologically Relevant Feature Selection and Graphical Displays for Multiclass Problems*. BMC Bioinformatics, 12, 253. 
 
-[^8]: Dayal, B. S., & MacGregor, J. F. (1997). *Improved PLS Algorithms*. Journal of Chemometrics, 11(1), 73–85.
+[^8]: Lê Cao, K.-A., Rossouw, D., Robert-Granié, C., & Besse, P. (2008). *A Sparse PLS for Variable Selection when Integrating Omics Data*. Statistical Applications in Genetics and Molecular Biology, 7(1), Article 35. 
+
+[^9]: Dayal, B. S., & MacGregor, J. F. (1997). *Improved PLS Algorithms*. Journal of Chemometrics, 11(1), 73–85.
 

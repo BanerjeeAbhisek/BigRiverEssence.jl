@@ -68,7 +68,7 @@ println("Estimated ranks: joint = $rJ, individual = $(res.ri)")
 
 We note that the permutation test finds a joint rank of $2$ which implies that two patterns are shared across all the three
 data types. We also found that the individual ranks are in the mid-$20$s for each block. The returned
-`JiveStructure` holds the joint (`J`, `S`, `U`) and individual (`A`, `Si`, `Wi`) parts along with the ranks.
+`Jive` holds the joint (`J`, `S`, `U`) and individual (`A`, `Si`, `Wi`) parts along with the ranks.
 
 ## Preparing for the figures
 

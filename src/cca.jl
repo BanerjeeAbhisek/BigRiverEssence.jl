@@ -1,5 +1,5 @@
 """
-	CcaStructure{T}
+	Cca{T}
 
 Container for a fitted canonical correlation analysis, as returned by `cca`
 # Fields
@@ -11,7 +11,7 @@ Container for a fitted canonical correlation analysis, as returned by `cca`
 - `nobs::Int`: The number of observations used (or −1 when fit via the covariance
   path, which doesn't carry n through)
 """
-struct CcaStructure{T}
+struct Cca{T}
 	xmean::Vector{T}
 	ymean::Vector{T}
 	xproj::Matrix{T}
@@ -21,11 +21,11 @@ struct CcaStructure{T}
 end
 
 """
-	cca_transform(M::CcaStructure, Z::AbstractMatrix, c::Symbol)
+	cca_transform(M::Cca, Z::AbstractMatrix, c::Symbol)
 
 Project data onto the canonical directions of a fitted CCA model
 # Arguments
-- `M::CcaStructure`: A fitted CCA model, as returned by `cca`
+- `M::Cca`: A fitted CCA model, as returned by `cca`
 - `Z::AbstractMatrix`: 2d array of floats; the data to project, with variables in
   rows and observations in columns, matching the side selected by `c`
 - `c::Symbol`: Which side to project, `:x` (using the X directions and X mean) or
@@ -35,7 +35,7 @@ Project data onto the canonical directions of a fitted CCA model
 coordinates along the canonical directions). Throws an `ArgumentError` if `c` is
 neither `:x` nor `:y`
 """
-function cca_transform(M::CcaStructure, Z::AbstractMatrix, c::Symbol)
+function cca_transform(M::Cca, Z::AbstractMatrix, c::Symbol)
 	if c === :x
 		return transpose(M.xproj) * (Z .- M.xmean)        # project onto X canonical directions
 	elseif c === :y
@@ -56,7 +56,7 @@ Solve CCA directly from the centered data via SVD (no covariance matrices formed
 - `ymean`: 1d array of floats; the Y means, stored in the result
 - `p::Int`: The number of canonical components to return
 # Value
-A `CcaStructure` with the top-p canonical directions and correlations. Works from
+A `Cca` with the top-p canonical directions and correlations. Works from
 the SVDs of Zx and Zy directly rather than forming covariance matrices, which is
 the numerically stable route advocated by Weenink (2003): the canonical
 correlations are the singular values of the overlap between the two
@@ -83,7 +83,7 @@ function _cca_svd_opt(Zx, Zy, xmean, ymean, p::Int)
 	Py = Sy.U * @view S.V[:, si]                          # Y canonical directions
 
 	corrs = S.S[si]
-	return CcaStructure(xmean, ymean, Px, Py, corrs, n)
+	return Cca(xmean, ymean, Px, Py, corrs, n)
 end
 
 """
@@ -98,7 +98,7 @@ Solve CCA from the covariance matrices via a generalized eigenproblem
 - `ymean`: 1d array of floats; the Y means, stored in the result
 - `p::Int`: The number of canonical components to return
 # Value
-A `CcaStructure` with the top-p canonical directions and correlations (its `nobs`
+A `Cca` with the top-p canonical directions and correlations (its `nobs`
 is −1, since this path works from covariances and doesn't carry n). Solves the
 classical canonical-correlation generalized eigenproblem (Weenink 2003), reducing
 through whichever side is smaller (dx ≤ dy or dx > dy) for efficiency: the squared
@@ -131,7 +131,7 @@ function _cca_cov_opt(Cxx, Cyy, Cxy, xmean, ymean, p::Int)
 	end
 
 	corrs = sqrt.(clamp.(eigs, 0.0, Inf))                 # canonical corr = √eigenvalue (clamped ≥ 0)
-	return CcaStructure(xmean, ymean, Px, Py, corrs, -1)
+	return Cca(xmean, ymean, Px, Py, corrs, -1)
 end
 
 """
@@ -176,7 +176,7 @@ Weenink (2003)
 - `outdim::Int`: The number of canonical components to return; must be in
   1:min(dx, dy). Defaults to min(dx, dy)
 # Value
-A `CcaStructure` holding the X and Y means, the canonical directions for each
+A `Cca` holding the X and Y means, the canonical directions for each
 side, and the canonical correlations (descending). CCA finds pairs of directions,
 one in X-space and one in Y-space, whose projected variates are maximally
 correlated; the k-th pair is the most correlated subject to being uncorrelated

@@ -1,5 +1,5 @@
 """
-	JiveStructure{T}
+	Jive{T}
 
 Container for a fitted JIVE (Joint and Individual Variation Explained)
 decomposition, as returned by `jive`
@@ -17,7 +17,7 @@ decomposition, as returned by `jive`
 - `r::Int`: The joint rank (dimension of the shared structure)
 - `ri::Vector{Int}`: The individual ranks, one per block
 """
-struct JiveStructure{T}
+struct Jive{T}
 	J::Vector{Matrix{T}}
 	A::Vector{Matrix{T}}
 	S::Matrix{T}
@@ -108,7 +108,7 @@ alternating between estimating the joint and individual structure
   iterations
 - `maxiter::Int`: The maximum number of outer iterations
 # Value
-A `JiveStructure` with the joint (J, S, U) and individual (A, Si, Wi) parts.
+A `Jive` with the joint (J, S, U) and individual (A, Si, Wi) parts.
 Implements the r.jive "orthIndiv" algorithm of Lock et al. (2013): wide blocks
 are first compressed to their score space (via SVD) for efficiency, then the
 joint structure is the rank-r SVD of the stacked residual (data minus individual),
@@ -263,7 +263,7 @@ function _jive_rjive_core_opt2(Xc::Vector{Matrix{Float64}}, n::Int, r::Int, ri::
 		push!(Si, Matrix(@view Fi.Vt[1:ri[i], :]))                   # individual scores
 		push!(Wi, Fi.U[:, 1:ri[i]] * Diagonal(Fi.S[1:ri[i]]))         # individual loadings
 	end
-	return JiveStructure{T_}(Jfull, Afull, S, U, Si, Wi, r, ri)
+	return Jive{T_}(Jfull, Afull, S, U, Si, Wi, r, ri)
 end
 
 """
@@ -399,7 +399,7 @@ data blocks sharing a common set of observations
   Defaults to 100
 - `alpha::Float64`: The significance level for the rank test. Defaults to 0.05
 # Value
-A `JiveStructure` with the joint and individual decompositions. Each block is
+A `Jive` with the joint and individual decompositions. Each block is
 first row-centered and Frobenius-scaled so no block dominates by sheer magnitude.
 If the joint and individual ranks are not supplied, they are estimated by a
 permutation test; the decomposition is then computed by alternating between
@@ -448,7 +448,7 @@ individual ranks `ri` directly
 - `ri::Vector{Int}`: The individual ranks, one per block
 - `kwargs...`: Any keyword arguments accepted by the keyword form of `jive`
 # Value
-A `JiveStructure`; identical to calling `jive(Xs; r = r, ri = ri, kwargs...)`
+A `Jive`; identical to calling `jive(Xs; r = r, ri = ri, kwargs...)`
 """
 jive(Xs::Vector{Matrix{Float64}}, r::Int, ri::Vector{Int}; kwargs...) =
 	jive(Xs; r = r, ri = ri, kwargs...)

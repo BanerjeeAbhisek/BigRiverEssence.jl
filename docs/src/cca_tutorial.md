@@ -95,7 +95,7 @@ m = cca(X, Y)                # :svd solver by default
 m.corrs                          # canonical correlations, descending
 ```
 
-The fitted `CcaStructure` holds the means, the canonical directions for each side
+The fitted `Cca` holds the means, the canonical directions for each side
 (`xproj`, `yproj`), and the canonical correlations (`corrs`).
 
 ## The first canonical pair

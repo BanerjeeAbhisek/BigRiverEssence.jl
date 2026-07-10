@@ -1,5 +1,5 @@
 """
-	SpcStructure{T}
+	Spc{T}
 
 Container for a fitted sparse principal component analysis, as returned by
 `spc` or `spc_orth`
@@ -15,7 +15,7 @@ Container for a fitted sparse principal component analysis, as returned by
 - `propOFvar::Vector{T}`: The cumulative proportion of variance explained by the
   first k components (see `_prop_var_explained`)
 """
-struct SpcStructure{T}
+struct Spc{T}
 	mean::Vector{T}
 	scale::Vector{T}
 	loadings::Matrix{T}
@@ -254,7 +254,7 @@ variant)
 - `niter::Int`: The maximum number of power-iteration steps per component.
   Defaults to 20
 # Value
-An `SpcStructure` holding the column means, scales, k sparse loadings, component
+An `Spc` holding the column means, scales, k sparse loadings, component
 variances, and cumulative proportion of variance explained. Components are found
 sequentially: each loading is fit on the residual, then removed by rank-1
 deflation before the next is extracted
@@ -299,7 +299,7 @@ function spc(X; k = 2, c = sqrt(size(X, 2)) / 2, standardize = false,
 	_sign_consistency_opt!(V)                            # fix arbitrary per-column signs for reproducibility
 	vars = d .^ 2 ./ (n - 1)                           # variance carried by each component (dₖ² / (n-1))
 	# PVE uses the adjusted-variance measure since sparse loadings aren't orthonormal
-	return SpcStructure{T}(means, sigma, V, vars, _prop_var_explained(Xc, V))
+	return Spc{T}(means, sigma, V, vars, _prop_var_explained(Xc, V))
 end
 
 """
@@ -319,7 +319,7 @@ variant of the SPC criterion)
 - `niter::Int`: The maximum number of power-iteration steps per component.
   Defaults to 20
 # Value
-An `SpcStructure` holding the column means, scales, k sparse loadings, component
+An `Spc` holding the column means, scales, k sparse loadings, component
 variances, and cumulative proportion of variance explained. Unlike `spc`, each
 component's scores are constrained to be orthogonal to all previous components'
 scores (via projection rather than deflation), so the score directions form an
@@ -369,5 +369,5 @@ function spc_orth(X; k = 2, c = sqrt(size(X, 2)) / 2, standardize = false,
 	_sign_consistency_opt!(V)                            # fix arbitrary per-column signs for reproducibility
 	vars = d .^ 2 ./ (n - 1)                           # variance carried by each component (dₖ² / (n-1))
 	# PVE uses the adjusted-variance measure since sparse loadings aren't orthonormal
-	return SpcStructure{T}(means, sigma, V, vars, _prop_var_explained(Xc, V))
+	return Spc{T}(means, sigma, V, vars, _prop_var_explained(Xc, V))
 end

@@ -24,7 +24,7 @@
 	Y = randn(n, q)
 	m = BigRiverEssence.plskern(X, Y; nlv = nlv)
 
-	@test m isa BigRiverEssence.PlskernStructure
+	@test m isa BigRiverEssence.Plskern
 	@test size(m.W) == (p, nlv)            # weights
 	@test size(m.P) == (p, nlv)            # X loadings
 	@test size(m.Q) == (q, nlv)            # Y loadings

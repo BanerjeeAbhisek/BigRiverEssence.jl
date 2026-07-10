@@ -1,5 +1,5 @@
 """
-	PlskernStructure{T}
+	Plskern{T}
 
 Container for a fitted kernel PLS regression model, as returned by `plskern`.
 Holds the standard PLS factor matrices and the centering/scaling statistics
@@ -16,7 +16,7 @@ Holds the standard PLS factor matrices and the centering/scaling statistics
 - `ymeans::Vector{T}`: The column means of Y removed during centering
 - `yscales::Vector{T}`: The column scales of Y
 """
-struct PlskernStructure{T}
+struct Plskern{T}
 	W::Matrix{T}
 	P::Matrix{T}
 	Q::Matrix{T}
@@ -44,7 +44,7 @@ and scaling are done on internal copies
 - `method::Symbol`: `:algo1` (kernel via XᵀY) or `:algo2` (kernel via XᵀX,
   faster when p ≪ n). Both give identical results. Defaults to `:algo1`
 # Value
-A `PlskernStructure` holding the weight (W, R), loading (P, Q), and score (T)
+A `Plskern` holding the weight (W, R), loading (P, Q), and score (T)
 matrices together with the centering means and scales
 """
 function plskern(X::Matrix{Float64}, Y::Matrix{Float64}; nlv = 2,
@@ -149,15 +149,15 @@ function plskern(X::Matrix{Float64}, Y::Matrix{Float64}; nlv = 2,
 		@views R[:, a] .= r
 	end
 
-	return PlskernStructure{T_}(W, P, Q, R, Tt, xmeans, xscales, ymeans, yscales)
+	return Plskern{T_}(W, P, Q, R, Tt, xmeans, xscales, ymeans, yscales)
 end
 
 """
-	plskern_coef(m::PlskernStructure; nlv::Int = size(m.R, 2))
+	plskern_coef(m::Plskern; nlv::Int = size(m.R, 2))
 
 Assemble the regression coefficient matrix and intercept from a fitted PLS model
 # Arguments
-- `m::PlskernStructure`: A fitted PLS model, as returned by `plskern`
+- `m::Plskern`: A fitted PLS model, as returned by `plskern`
 - `nlv::Int`: The number of latent variables to include; clamped to the number
   fitted. Defaults to all fitted components
 # Value
@@ -165,7 +165,7 @@ A tuple `(B, intercept)` where `B` is the p×q coefficient matrix and `intercept
 is the 1×q intercept, such that a prediction is `intercept .+ Xnew * B`. The
 scales are folded in so B maps raw (uncentered, unscaled) X to Y
 """
-function plskern_coef(m::PlskernStructure; nlv = size(m.R, 2))
+function plskern_coef(m::Plskern; nlv = size(m.R, 2))
 	nlv = min(nlv, size(m.R, 2))
 	# B in the original (raw) units: undo the X-scaling on R, recombine with Q, reapply the Y-scaling.
 	B = (m.R[:, 1:nlv] ./ m.xscales) * (m.Q[:, 1:nlv]') .* m.yscales'
@@ -174,11 +174,11 @@ function plskern_coef(m::PlskernStructure; nlv = size(m.R, 2))
 end
 
 """
-	plskern_predict(m::PlskernStructure, Xnew::Matrix{Float64}; nlv::Int = size(m.R, 2))
+	plskern_predict(m::Plskern, Xnew::Matrix{Float64}; nlv::Int = size(m.R, 2))
 
 Predict responses for new observations from a fitted PLS model
 # Arguments
-- `m::PlskernStructure`: A fitted PLS model, as returned by `plskern`
+- `m::Plskern`: A fitted PLS model, as returned by `plskern`
 - `Xnew::Matrix{Float64}`: 2d array of floats; the new observations (rows) by
   predictors (columns), with the same p predictors as the training data
 - `nlv::Int`: The number of latent variables to use; clamped to the number
@@ -186,18 +186,18 @@ Predict responses for new observations from a fitted PLS model
 # Value
 2d array of floats; the predicted n×q responses, `intercept .+ Xnew * B`
 """
-function plskern_predict(m::PlskernStructure, Xnew; nlv = size(m.R, 2))
+function plskern_predict(m::Plskern, Xnew; nlv = size(m.R, 2))
 	Xnew = Matrix{Float64}(Xnew)
 	B, intercept = plskern_coef(m; nlv = nlv)
 	return intercept .+ Xnew * B                       # apply the coefficient model
 end
 
 """
-	plskern_transform(m::PlskernStructure, Xnew::Matrix{Float64}; nlv::Int = size(m.R, 2))
+	plskern_transform(m::Plskern, Xnew::Matrix{Float64}; nlv::Int = size(m.R, 2))
 
 Project new observations onto the PLS latent space (compute their X-scores)
 # Arguments
-- `m::PlskernStructure`: A fitted PLS model, as returned by `plskern`
+- `m::Plskern`: A fitted PLS model, as returned by `plskern`
 - `Xnew::Matrix{Float64}`: 2d array of floats; the new observations (rows) by
   predictors (columns), with the same p predictors as the training data
 - `nlv::Int`: The number of latent variables to project onto; clamped to the
@@ -206,7 +206,7 @@ Project new observations onto the PLS latent space (compute their X-scores)
 2d array of floats; the n×nlv matrix of X-scores. For the training data this
 reproduces the stored scores `m.T`, since scores are linear: T = Xc·R
 """
-function plskern_transform(m::PlskernStructure, Xnew; nlv = size(m.R, 2))
+function plskern_transform(m::Plskern, Xnew; nlv = size(m.R, 2))
 	Xnew = Matrix{Float64}(Xnew)
 	nlv  = min(nlv, size(m.R, 2))
 	Xc   = (Xnew .- m.xmeans') ./ m.xscales'           # center and scale with the stored stats
