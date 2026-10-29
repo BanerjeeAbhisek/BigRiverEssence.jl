@@ -13,6 +13,8 @@ export Pca, pca, pca_transform, pca_invtransform
 include("nmf.jl")
 export Nmf, nmf, nmf_transform, nmf_invtransform
 
+include("mofa.jl")
+
 include("pmd.jl")
 export Pmd, pmd
 
