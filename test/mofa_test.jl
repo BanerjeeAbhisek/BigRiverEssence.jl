@@ -1,5 +1,5 @@
-# Tests for MOFA input validation and Gaussian preprocessing.
-# No model is fitted in this first implementation step.
+# Tests for MOFA preprocessing, dense Gaussian initialization, and moments.
+# No model is fitted by these internal preparation functions.
 # Tolerances (tol_ord / tol_julia / tol_r) come from runtests.jl.
 
 @testset "sample groups preserve row order" begin
@@ -21,6 +21,238 @@
 	for labels in ([missing, :a], [nothing, :a], [NaN, 1.0], [Inf, 1.0])
 		@test_throws ArgumentError BigRiverEssence._mofa_groups(2, labels)
 	end
+end
+
+@testset "Gaussian moments retain uncertainty and reuse storage" begin
+	mu = [0.0 -2.0; 3.0 0.5]
+	variance = [1.0 0.25; 2.0 4.0]
+	q = BigRiverEssence.MofaGaussian(copy(mu), copy(variance), zeros(2, 2))
+	buffer = q.second_moment
+	@test BigRiverEssence._mofa_gaussian_moments!(q) === q
+	@test q.mean == mu
+	@test q.variance == variance
+	@test q.second_moment == [1.0 4.25; 11.0 4.25]
+	@test q.second_moment === buffer
+	q.mean[1, 1] = 2.0
+	q.variance[2, 2] = 3.0
+	BigRiverEssence._mofa_gaussian_moments!(q)
+	@test q.second_moment[1, 1] == 5.0
+	@test q.second_moment[2, 2] == 3.25
+	@test q.second_moment === buffer
+	bad = BigRiverEssence.MofaGaussian(zeros(2, 1), ones(1, 1), zeros(2, 1))
+	@test_throws DimensionMismatch BigRiverEssence._mofa_gaussian_moments!(bad)
+	bad = BigRiverEssence.MofaGaussian(zeros(2, 1), ones(2, 1), zeros(1, 1))
+	@test_throws DimensionMismatch BigRiverEssence._mofa_gaussian_moments!(bad)
+	for value in (0.0, -1.0, Inf, NaN)
+		bad = BigRiverEssence.MofaGaussian(zeros(1, 1), fill(value, 1, 1), zeros(1, 1))
+		@test_throws ArgumentError BigRiverEssence._mofa_gaussian_moments!(bad)
+	end
+	for value in (Inf, NaN, floatmax(Float64))
+		bad = BigRiverEssence.MofaGaussian(fill(value, 1, 1), ones(1, 1), zeros(1, 1))
+		@test_throws ArgumentError BigRiverEssence._mofa_gaussian_moments!(bad)
+	end
+end
+
+@testset "Gamma expectation uses rates, not scales" begin
+	shape = [1.0 2.0; 3.0 4.0]
+	rate = [2.0 4.0; 0.5 1.0]
+	shape_before, rate_before = copy(shape), copy(rate)
+	expected = zeros(2, 2)
+	@test BigRiverEssence._mofa_gamma_mean!(expected, shape, rate) === expected
+	@test expected == [0.5 0.5; 6.0 4.0]
+	@test shape == shape_before
+	@test rate == rate_before
+	@test_throws DimensionMismatch BigRiverEssence._mofa_gamma_mean!(zeros(1, 1), shape, rate)
+	@test_throws DimensionMismatch BigRiverEssence._mofa_gamma_mean!(expected, shape, ones(1, 1))
+	for value in (0.0, -1.0, Inf, NaN)
+		@test_throws ArgumentError BigRiverEssence._mofa_gamma_mean!(zeros(1, 1), fill(value, 1, 1), ones(1, 1))
+		@test_throws ArgumentError BigRiverEssence._mofa_gamma_mean!(zeros(1, 1), ones(1, 1), fill(value, 1, 1))
+	end
+	@test_throws ArgumentError BigRiverEssence._mofa_gamma_mean!(zeros(1, 1), fill(floatmax(Float64), 1, 1), fill(eps(Float64), 1, 1))
+	@test_throws ArgumentError BigRiverEssence._mofa_gamma_mean!(zeros(1, 1), fill(floatmin(Float64), 1, 1), fill(floatmax(Float64), 1, 1))
+end
+
+@testset "initial factor rescaling" begin
+	Z = [1.0 10.0; 3.0 30.0; 5.0 20.0]
+	@test BigRiverEssence._mofa_rescale_factors!(Z) === Z
+	@test Z == [-1.0 -1.0; 0.0 1.0; 1.0 0.0]
+	for Z in (zeros(0, 1), zeros(2, 0), ones(2, 1),
+		reshape([NaN, 1.0], 2, 1), reshape([Inf, 1.0], 2, 1),
+		reshape([-floatmax(Float64), floatmax(Float64)], 2, 1))
+		@test_throws ArgumentError BigRiverEssence._mofa_rescale_factors!(Z)
+	end
+end
+
+@testset "initial state, Python defaults & compact workspace" begin
+	X = [1.0 2.0; 3.0 1.0; 2.0 7.0; 5.0 4.0; 6.0 8.0; 4.0 3.0]
+	Y = reshape([3.0, 2.0, 6.0, 1.0, 8.0, 5.0], 6, 1)
+	d = BigRiverEssence._mofa_preprocess([X, Y]; groups = [:a, :b, :a, :b, :a, :b])
+	before = deepcopy(d)
+	s, workspace = BigRiverEssence._mofa_initialize(d, 2)
+	@test s isa BigRiverEssence.MofaState{Float64}
+	@test workspace isa BigRiverEssence.MofaWorkspace{Float64}
+	@test size(s.z.mean) == (6, 2)
+	@test s.z.variance == ones(6, 2)
+	@test s.z.second_moment ≈ s.z.mean .^ 2 .+ 1 atol = tol_ord
+	@test vec(minimum(s.z.mean, dims = 1)) == [-1.0, -1.0]
+	@test vec(maximum(s.z.mean, dims = 1)) == [1.0, 1.0]
+	@test length(s.w) == length(s.tau_mean) == 2
+	for m in 1:2
+		p = size(d.data[m], 2)
+		@test s.w[m].mean == zeros(p, 2)
+		@test s.w[m].variance == ones(p, 2)
+		@test s.w[m].second_moment == ones(p, 2)
+		@test s.tau_shape[m] == ones(2, p)
+		@test s.tau_rate[m] == ones(2, p)
+		@test s.tau_mean[m] == ones(2, p)
+		@test d.data[m] == before.data[m]
+		@test d.missing_mask[m] == before.missing_mask[m]
+	end
+	@test s.tau_prior_shape == s.tau_prior_rate == 1e-3
+	@test workspace.sample_buffer == zeros(6)
+	@test workspace.feature_buffer == zeros(2)
+	@test workspace.factor_buffer == zeros(2)
+	# Noise state is G×p per view, not an expanded n×p precision matrix.
+	@test size(s.tau_mean[1]) == (2, 2)
+	# Every independently updated quantity has its own storage.
+	@test s.z.mean !== s.z.variance !== s.z.second_moment
+	s.w[1].variance[1, 1] = 9.0
+	s.tau_shape[1][1, 1] = 4.0
+	workspace.sample_buffer[1] = 99.0
+	@test s.w[1].second_moment[1, 1] == 1.0
+	@test s.w[2].variance[1, 1] == 1.0
+	@test s.tau_rate[1][1, 1] == s.tau_mean[1][1, 1] == 1.0
+	@test d.data[1] == before.data[1]
+	@test s.z.mean[1, 1] != 99.0
+end
+
+@testset "PCA initialization: whitening, imputation & input preservation" begin
+	X = [1.0 NaN; 3.0 6.0; 8.0 2.0; 2.0 9.0; 10.0 5.0; 4.0 8.0]
+	Y = reshape([2.0, 1.0, 8.0, 3.0, 7.0, 4.0], 6, 1)
+	for center in (false, true)
+		d = BigRiverEssence._mofa_preprocess([X, Y]; center_groups = center)
+		before = deepcopy(d)
+		Z = BigRiverEssence._mofa_pca_factors(d, 2)
+		# Independent reference: explicitly impute and whiten the PCA scores,
+		# then apply the Python dense-factor min/max transformation.
+		imputed = hcat(d.data...)
+		imputed[1, 2] = mean(d.data[1][2:end, 2])
+		centered = imputed .- mean(imputed, dims = 1)
+		F = svd(centered; full = false)
+		scores = centered * F.V[:, 1:2]
+		for j in 1:2
+			pivot = argmax(abs.(F.V[:, j]))
+			F.V[pivot, j] < 0 && (scores[:, j] .*= -1)
+			scores[:, j] ./= F.S[j] / sqrt(size(centered, 1) - 1)
+		end
+		expected = 2 .* (scores .- minimum(scores, dims = 1)) ./
+			(maximum(scores, dims = 1) .- minimum(scores, dims = 1)) .- 1
+		@test Z ≈ expected atol = tol_ord
+		for m in eachindex(d.data)
+			@test d.data[m] == before.data[m]
+			@test d.missing_mask[m] == before.missing_mask[m]
+		end
+		@test d.data[1][1, 2] == 0.0
+		@test d.missing_mask[1][1, 2]
+		s, _ = BigRiverEssence._mofa_initialize(d, 2)
+		@test s.z.mean ≈ expected atol = tol_ord
+	end
+	# Both tall and wide concatenated matrices use the same PCA convention.
+	Random.seed!(52)
+	for X in (randn(12, 4), randn(4, 12))
+		d = BigRiverEssence._mofa_preprocess([X])
+		Z = BigRiverEssence._mofa_pca_factors(d, 2)
+		@test size(Z) == (size(X, 1), 2)
+		@test all(isfinite, Z)
+		@test minimum(Z) ≈ -1.0 atol = tol_ord
+		@test maximum(Z) ≈ 1.0 atol = tol_ord
+	end
+end
+
+@testset "random initialization & RNG behavior" begin
+	d = BigRiverEssence._mofa_preprocess([reshape(collect(1.0:6.0), 6, 1)])
+	Random.seed!(12)
+	draws = randn(6, 2)
+	expected = 2 .* (draws .- minimum(draws, dims = 1)) ./
+		(maximum(draws, dims = 1) .- minimum(draws, dims = 1)) .- 1
+	Random.seed!(12)
+	s1, _ = BigRiverEssence._mofa_initialize(d, 2; init = :random)
+	@test s1.z.mean ≈ expected atol = tol_ord
+	Random.seed!(12)
+	s2, _ = BigRiverEssence._mofa_initialize(d, 2; init = :random)
+	@test s1.z.mean == s2.z.mean
+	@test s1.z.second_moment == s2.z.second_moment
+	s3, _ = BigRiverEssence._mofa_initialize(d, 2; init = :random)
+	@test s3.z.mean != s2.z.mean
+	# An explicitly supplied RNG must not consume the global RNG sequence.
+	Random.seed!(21)
+	next_global = rand()
+	Random.seed!(21)
+	s4, _ = BigRiverEssence._mofa_initialize(d, 2; init = :random, rng = MersenneTwister(12))
+	@test rand() == next_global
+	@test size(s4.z.mean) == (6, 2)
+	# PCA initialization does not draw random numbers.
+	Random.seed!(21)
+	BigRiverEssence._mofa_initialize(d, 1)
+	@test rand() == next_global
+end
+
+@testset "custom initialization copies means without rescaling" begin
+	d = BigRiverEssence._mofa_preprocess([ones(3, 2), ones(3, 1)])
+	Z = [2.0 -3.0; 4.0 8.0; -1.0 0.0]
+	W = [[1.0 2.0; -3.0 4.0], reshape([5.0, 6.0], 1, 2)]
+	s, workspace = BigRiverEssence._mofa_initialize(d, 2; init = :custom, z_init = Z, w_init = W)
+	@test s.z.mean == Z
+	@test s.z.second_moment == Z .^ 2 .+ 1
+	for m in eachindex(W)
+		@test s.w[m].mean == W[m]
+		@test s.w[m].second_moment == W[m] .^ 2 .+ 1
+	end
+	s.z.mean[1, 1] = 100.0
+	s.w[1].mean[1, 1] = 200.0
+	@test Z[1, 1] == 2.0
+	@test W[1][1, 1] == 1.0
+	@test workspace.sample_buffer == zeros(3)
+	s, _ = BigRiverEssence._mofa_initialize(d, 2; init = :custom, z_init = Float32.(Z))
+	@test s.z.mean isa Matrix{Float64}
+	@test s.z.mean == Z
+	@test all(W -> all(iszero, W.mean), s.w)
+	# One sample is valid for custom factors; PCA/random cannot rescale it.
+	one = BigRiverEssence._mofa_preprocess([ones(1, 1)])
+	s, _ = BigRiverEssence._mofa_initialize(one, 1; init = :custom, z_init = fill(2.0, 1, 1))
+	@test s.z.mean == fill(2.0, 1, 1)
+	@test s.z.second_moment == fill(5.0, 1, 1)
+end
+
+@testset "initialization argument validation & degenerate PCA" begin
+	d = BigRiverEssence._mofa_preprocess([[1.0 2.0; 3.0 1.0; 2.0 5.0]])
+	@test_throws ArgumentError BigRiverEssence._mofa_initialize(d, 0)
+	@test_throws ArgumentError BigRiverEssence._mofa_initialize(d, -1)
+	@test_throws ArgumentError BigRiverEssence._mofa_initialize(d, 1; init = :other)
+	@test_throws ArgumentError BigRiverEssence._mofa_initialize(d, 1; init = :custom)
+	@test_throws ArgumentError BigRiverEssence._mofa_initialize(d, 1; z_init = ones(3, 1))
+	@test_throws ArgumentError BigRiverEssence._mofa_initialize(d, 1; w_init = [ones(2, 1)])
+	@test_throws DimensionMismatch BigRiverEssence._mofa_initialize(d, 1; init = :custom, z_init = ones(2, 1))
+	for Z in (fill(Inf, 3, 1), fill(NaN, 3, 1), fill("x", 3, 1), fill(1im, 3, 1))
+		@test_throws ArgumentError BigRiverEssence._mofa_initialize(d, 1; init = :custom, z_init = Z)
+	end
+	for W in ([], [ones(2, 1), ones(2, 1)], ones(2, 1), ["x"], [fill(Inf, 2, 1)])
+		@test_throws ArgumentError BigRiverEssence._mofa_initialize(d, 1; init = :custom, z_init = ones(3, 1), w_init = W)
+	end
+	@test_throws DimensionMismatch BigRiverEssence._mofa_initialize(d, 1; init = :custom,
+		z_init = ones(3, 1), w_init = [ones(3, 1)])
+	for k in (0, -1, 3)
+		@test_throws ArgumentError BigRiverEssence._mofa_pca_factors(d, k)
+	end
+	rank_one = BigRiverEssence._mofa_preprocess([[1.0 2.0; 2.0 4.0; 3.0 6.0]])
+	@test_throws ArgumentError BigRiverEssence._mofa_initialize(rank_one, 2)
+	constant = BigRiverEssence._mofa_preprocess([ones(3, 2)])
+	@test_throws ArgumentError BigRiverEssence._mofa_initialize(constant, 1)
+	one = BigRiverEssence._mofa_preprocess([ones(1, 1)])
+	@test_throws ArgumentError BigRiverEssence._mofa_initialize(one, 1)
+	@test_throws ArgumentError BigRiverEssence._mofa_initialize(one, 1; init = :random)
+	extreme = BigRiverEssence._mofa_preprocess([reshape([floatmax(Float64), -floatmax(Float64)], 2, 1)]; center_groups = false)
+	@test_throws ArgumentError BigRiverEssence._mofa_pca_factors(extreme, 1)
 end
 
 @testset "output structure & default centering" begin

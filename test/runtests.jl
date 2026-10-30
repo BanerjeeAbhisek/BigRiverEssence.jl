@@ -35,7 +35,7 @@ const tol_r     = 1e-3
 	@testset "Nonnegative Matrix Factorization (nmf)" begin
 		include("nmf_test.jl")
 	end
-	@testset "MOFA input validation and preprocessing" begin
+	@testset "MOFA preparation and initialization" begin
 		include("mofa_test.jl")
 	end
 	@testset "Penalized Matrix Decomposition (pmd)" begin
