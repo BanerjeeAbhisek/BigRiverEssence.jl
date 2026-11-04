@@ -4,7 +4,8 @@
 # https://github.com/bioFAM/mofapy2/blob/90418e5021b3ae735ebf1fea5d7e07cae71c8bb7/mofapy2/build_model/utils.py
 # Dense Gaussian initialization and moments follow the same reference's
 # build_model/init_model.py and core/distributions/univariate_gaussian.py.
-# Dense Gaussian weight sweeps follow core/nodes/W_nodes.py (full batch,
+# Dense Gaussian weight/factor sweeps follow core/nodes/W_nodes.py and
+# core/nodes/Z_nodes.py (full batch, equal view weights,
 # zero-mean/unit-variance priors, no ARD). A complete fitting loop is not yet
 # implemented.
 
@@ -94,8 +95,9 @@ Internal reusable scratch buffers, allocated once by `_mofa_initialize`
   only the current view's first pᵢ entries are used
 - `factor_buffer::Vector{T}`: Length-k scratch for factor-wise calculations
 
-Scratch is separate from model parameters and starts at zero. The weight update
-reuses the sample and factor buffers without reserving a full n×pᵢ residual matrix
+Scratch is separate from model parameters and starts at zero. Weight updates
+reuse the sample/factor buffers, and factor updates reuse the feature/factor
+buffers, without reserving a full n×pᵢ residual matrix
 """
 struct MofaWorkspace{T}
 	sample_buffer::Vector{T}
@@ -403,6 +405,105 @@ function _mofa_update_weights!(data::MofaData{Float64}, state::MofaState{Float64
 				W.second_moment[j, component] = second
 				factors[component] = mu
 			end
+		end
+	end
+	return state
+end
+
+"""
+	_mofa_update_factors!(data::MofaData{Float64}, state::MofaState{Float64},
+		workspace::MofaWorkspace{Float64})
+
+Perform one full-batch coordinate sweep over dense Gaussian sample-factor distributions
+# Arguments
+- `data::MofaData{Float64}`: Preprocessed aligned views and missing-entry masks;
+  only observed entries across all views contribute for each sample
+- `state::MofaState{Float64}`: Current factor means, loading distributions, and
+  group-by-feature expected noise precisions. Loading second moments must be
+  current, as produced by `_mofa_gaussian_moments!` or `_mofa_update_weights!`.
+  Factor means, variances, and second moments are overwritten; weights and
+  noise are held fixed
+- `workspace::MofaWorkspace{Float64}`: Reusable feature buffer of length at least
+  max(pᵢ) and length-k factor buffer, overwritten during the sweep. Only the
+  current view's first pᵢ feature entries are used; the sample buffer is unused
+# Value
+The supplied state after one factor sweep with zero-mean, unit-variance priors,
+equal view weights, and no ARD, spike-and-slab, or stochastic damping. Each factor
+variance is 1/(1 + sum(τ*E[w²])); its mean is that variance times sum(τ*E[w]*r),
+summing over observed features in all views. The residual r excludes the current
+factor, and later coordinates use earlier coordinates' newly updated means.
+Samples are conditionally independent, so sample-major traversal preserves the
+reference's coordinate updates. A sample missing every view returns to the
+prior. Prediction excluding the current coordinate is computed directly, without
+subtract/add-back cancellation or an n×pᵢ residual/precision allocation. Throws a
+`DimensionMismatch` for incompatible dimensions or an `ArgumentError` for invalid
+group indices, nonfinite means, nonpositive/nonfinite loading second moments or
+noise precisions, or nonfinite update results. Numeric failure can leave earlier
+factor coordinates updated; no rollback is attempted. This is one update, not a
+complete MOFA fit
+"""
+function _mofa_update_factors!(data::MofaData{Float64}, state::MofaState{Float64},
+	workspace::MofaWorkspace{Float64})
+	n, k = size(state.z.mean)
+	n >= 1 && k >= 1 || throw(ArgumentError("MOFA requires samples and factors"))
+	size(state.z.variance) == size(state.z.second_moment) == (n, k) ||
+		throw(DimensionMismatch("MOFA factor parameter and moment shapes must match"))
+	length(workspace.factor_buffer) == k ||
+		throw(DimensionMismatch("MOFA factor workspace requires a length-k factor buffer"))
+	nviews, ngroups = length(data.data), length(data.group_labels)
+	nviews >= 1 && ngroups >= 1 || throw(ArgumentError("MOFA requires views and groups"))
+	length(data.missing_mask) == length(state.w) == length(state.tau_mean) == nviews ||
+		throw(DimensionMismatch("MOFA data, masks, weights, and noise must have matching view counts"))
+	length(data.group_indices) == n || throw(DimensionMismatch("MOFA group indices must match the sample count"))
+	all(g -> 1 <= g <= ngroups, data.group_indices) ||
+		throw(ArgumentError("MOFA sample group indices are out of range"))
+	all(isfinite, state.z.mean) || throw(ArgumentError("MOFA factor means must be finite"))
+	# Check all views before changing factors, including the largest scratch need.
+	for m in 1:nviews
+		Y, W, tau = data.data[m], state.w[m], state.tau_mean[m]
+		p = size(Y, 2)
+		size(Y, 1) == n && size(data.missing_mask[m]) == size(Y) &&
+			size(W.mean) == size(W.variance) == size(W.second_moment) == (p, k) &&
+			size(tau) == (ngroups, p) ||
+			throw(DimensionMismatch("MOFA view $m has incompatible data, weight, mask, or noise dimensions"))
+		length(workspace.feature_buffer) >= p ||
+			throw(DimensionMismatch("MOFA factor workspace must fit every view's features"))
+		all(isfinite, W.mean) && all(x -> isfinite(x) && x > 0, W.second_moment) &&
+			all(x -> isfinite(x) && x > 0, tau) ||
+			throw(ArgumentError("MOFA loading means must be finite and second moments/noise precisions finite and positive"))
+	end
+	factors = workspace.factor_buffer
+	for i in 1:n
+		group = data.group_indices[i]
+		for component in 1:k
+			factors[component] = state.z.mean[i, component]
+		end
+		for component in 1:k
+			factors[component] = 0.0
+			precision, numerator = 1.0, 0.0
+			for m in 1:nviews
+				Y, mask, W, tau = data.data[m], data.missing_mask[m], state.w[m], state.tau_mean[m]
+				p = size(Y, 2)
+				prediction = @view workspace.feature_buffer[1:p]
+				mul!(prediction, W.mean, factors)
+				for j in 1:p
+					mask[i, j] && continue
+					noise = tau[group, j]
+					precision += noise * W.second_moment[j, component]
+					numerator += noise * W.mean[j, component] * (Y[i, j] - prediction[j])
+				end
+			end
+			isfinite(precision) && isfinite(numerator) ||
+				throw(ArgumentError("MOFA factor update produced nonfinite sufficient statistics"))
+			variance = inv(precision)
+			mu = variance * numerator
+			second = mu * mu + variance
+			isfinite(mu) && isfinite(second) && variance > 0 ||
+				throw(ArgumentError("MOFA factor update produced invalid Gaussian moments"))
+			state.z.mean[i, component] = mu
+			state.z.variance[i, component] = variance
+			state.z.second_moment[i, component] = second
+			factors[component] = mu
 		end
 	end
 	return state

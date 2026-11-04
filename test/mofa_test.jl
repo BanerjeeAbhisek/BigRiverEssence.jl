@@ -1,5 +1,5 @@
-# Tests for MOFA preprocessing, initialization, moments, and Gaussian weights.
-# Individual weight sweeps are tested; there is no complete fitting loop yet.
+# Tests for MOFA preprocessing, initialization, moments, and Gaussian updates.
+# Individual weight/factor sweeps are tested; there is no complete fitting loop.
 # Tolerances (tol_ord / tol_julia / tol_r) come from runtests.jl.
 
 @testset "sample groups preserve row order" begin
@@ -453,6 +453,242 @@ end
 		bad_data = deepcopy(d)
 		empty!(getproperty(bad_data, field))
 		@test_throws ArgumentError BigRiverEssence._mofa_update_weights!(bad_data, s, workspace)
+	end
+end
+
+@testset "Gaussian factors: hand-calculated multiview update" begin
+	X = [1.0 3.0; 5.0 7.0]
+	Y = reshape([2.0, 4.0], 2, 1)
+	d = BigRiverEssence._mofa_preprocess([X, Y]; groups = [:b, :a], center_groups = false)
+	s, workspace = BigRiverEssence._mofa_initialize(d, 1; init = :custom,
+		z_init = fill(1e20, 2, 1), w_init = [reshape([1.0, 2.0], 2, 1), fill(-1.0, 1, 1)])
+	s.w[1].variance[:, 1] .= [0.5, 1.0]
+	s.w[2].variance[1, 1] = 2.0
+	for W in s.w
+		BigRiverEssence._mofa_gaussian_moments!(W)
+	end
+	s.tau_mean[1] .= [2.0 4.0; 1.0 3.0]
+	s.tau_mean[2][:, 1] .= [3.0, 2.0]
+	before, data_before = deepcopy(s), deepcopy(d)
+	mean_buffer, variance_buffer, second_buffer = s.z.mean, s.z.variance, s.z.second_moment
+	workspace.sample_buffer .= 123.0
+	@test BigRiverEssence._mofa_update_factors!(d, s, workspace) === s
+	# Sample 1: precision = 1 + 2*1.5 + 4*5 + 3*3 = 33;
+	# numerator = 2*1*1 + 4*2*3 + 3*(-1)*2 = 20.
+	# Sample 2: precision = 1 + 1*1.5 + 3*5 + 2*3 = 47/2;
+	# numerator = 1*1*5 + 3*2*7 + 2*(-1)*4 = 39.
+	@test s.z.mean[:, 1] ≈ [20 / 33, 78 / 47] atol = tol_ord
+	@test s.z.variance[:, 1] ≈ [1 / 33, 2 / 47] atol = tol_ord
+	@test s.z.second_moment ≈ s.z.mean .^ 2 .+ s.z.variance atol = tol_ord
+	@test s.z.variance[1, 1] != 1 / 22  # squared loading means omit uncertainty
+	@test s.z.mean === mean_buffer
+	@test s.z.variance === variance_buffer
+	@test s.z.second_moment === second_buffer
+	for m in eachindex(s.w)
+		@test s.w[m].mean == before.w[m].mean
+		@test s.w[m].variance == before.w[m].variance
+		@test s.w[m].second_moment == before.w[m].second_moment
+	end
+	@test s.tau_mean == before.tau_mean
+	@test s.tau_shape == before.tau_shape
+	@test s.tau_rate == before.tau_rate
+	@test d.data == data_before.data
+	@test d.missing_mask == data_before.missing_mask
+	@test workspace.sample_buffer == fill(123.0, 2)
+end
+
+@testset "Gaussian factors: multiview sequential scalar reference" begin
+	Random.seed!(41)
+	n, k = 7, 3
+	views = [randn(n, 4), randn(n, 2)]
+	views[1][2, 3] = NaN
+	views[1][5, 1] = NaN
+	views[2][1, :] .= NaN
+	d = BigRiverEssence._mofa_preprocess(views; groups = [:b, :a, :b, :a, :b, :a, :b])
+	s, workspace = BigRiverEssence._mofa_initialize(d, k; init = :custom,
+		z_init = randn(n, k), w_init = [randn(4, k), randn(2, k)])
+	for m in eachindex(views)
+		s.w[m].variance .= 0.1 .+ rand(size(s.w[m].variance)...)
+		BigRiverEssence._mofa_gaussian_moments!(s.w[m])
+		s.tau_mean[m] .= 0.2 .+ 3 .* rand(size(s.tau_mean[m])...)
+	end
+	expected, frozen = deepcopy(s), deepcopy(s)
+	for sweep in 1:3
+		# Independent scalar calculation, component-major like the Python kernel.
+		for component in 1:k, i in 1:n
+			precision, numerator = 1.0, 0.0
+			for m in eachindex(d.data), j in axes(d.data[m], 2)
+				d.missing_mask[m][i, j] && continue
+				prediction = sum(expected.z.mean[i, other] * expected.w[m].mean[j, other]
+					for other in 1:k if other != component)
+				noise = expected.tau_mean[m][d.group_indices[i], j]
+				precision += noise * expected.w[m].second_moment[j, component]
+				numerator += noise * expected.w[m].mean[j, component] * (d.data[m][i, j] - prediction)
+			end
+			expected.z.variance[i, component] = 1 / precision
+			expected.z.mean[i, component] = numerator / precision
+		end
+		BigRiverEssence._mofa_update_factors!(d, s, workspace)
+		@test s.z.mean ≈ expected.z.mean atol = tol_ord
+		@test s.z.variance ≈ expected.z.variance atol = tol_ord
+		@test s.z.second_moment ≈ s.z.mean .^ 2 .+ s.z.variance atol = tol_ord
+		@test all(x -> 0 < x <= 1, s.z.variance)
+	end
+	for m in eachindex(s.w)
+		@test s.w[m].mean == frozen.w[m].mean
+		@test s.w[m].variance == frozen.w[m].variance
+		@test s.w[m].second_moment == frozen.w[m].second_moment
+	end
+	@test s.tau_mean == frozen.tau_mean
+end
+
+@testset "Gaussian factors use updated coordinates and all views" begin
+	d = BigRiverEssence._mofa_preprocess([[1.0 2.0]]; center_groups = false)
+	s, workspace = BigRiverEssence._mofa_initialize(d, 2; init = :custom,
+		z_init = zeros(1, 2), w_init = [[1.0 1.0; 1.0 2.0]])
+	BigRiverEssence._mofa_update_factors!(d, s, workspace)
+	@test s.z.mean[1, 1] ≈ 3 / 5 atol = tol_ord
+	@test s.z.variance[1, 1] ≈ 1 / 5 atol = tol_ord
+	@test s.z.mean[1, 2] ≈ (5 - 3 * (3 / 5)) / 8 atol = tol_ord
+	@test s.z.variance[1, 2] ≈ 1 / 8 atol = tol_ord
+	@test !isapprox(s.z.mean[1, 2], 5 / 8; atol = tol_ord)
+	# Splitting the features into views must preserve an equally weighted update.
+	split = BigRiverEssence._mofa_preprocess([fill(1.0, 1, 1), fill(2.0, 1, 1)]; center_groups = false)
+	t, scratch = BigRiverEssence._mofa_initialize(split, 2; init = :custom,
+		z_init = zeros(1, 2), w_init = [[1.0 1.0], [1.0 2.0]])
+	BigRiverEssence._mofa_update_factors!(split, t, scratch)
+	@test t.z.mean ≈ s.z.mean atol = tol_ord
+	@test t.z.variance ≈ s.z.variance atol = tol_ord
+end
+
+@testset "Gaussian factors exclude missing entries and retain uncertainty" begin
+	X = reshape([NaN, 3.0, NaN], 3, 1)
+	Y = reshape([2.0, NaN, NaN], 3, 1)
+	d = BigRiverEssence._mofa_preprocess([X, Y]; groups = [:a, :b, :a], center_groups = false)
+	s, workspace = BigRiverEssence._mofa_initialize(d, 1; init = :custom,
+		z_init = ones(3, 1), w_init = [ones(1, 1), fill(2.0, 1, 1)])
+	s.tau_mean[1][:, 1] .= [1e100, 2.0]
+	s.tau_mean[2][:, 1] .= [3.0, 1e100]
+	d.data[1][1, 1] = Inf
+	d.data[1][3, 1] = NaN
+	d.data[2][2, 1] = NaN
+	d.data[2][3, 1] = Inf
+	BigRiverEssence._mofa_update_factors!(d, s, workspace)
+	@test s.z.mean[:, 1] ≈ [12 / 16, 6 / 5, 0.0] atol = tol_ord
+	@test s.z.variance[:, 1] ≈ [1 / 16, 1 / 5, 1.0] atol = tol_ord
+	@test s.z.second_moment[3, 1] == 1.0  # completely missing sample: prior
+	d = BigRiverEssence._mofa_preprocess([ones(3, 2)]; center_groups = false)
+	s, workspace = BigRiverEssence._mofa_initialize(d, 1; init = :custom, z_init = ones(3, 1))
+	BigRiverEssence._mofa_update_factors!(d, s, workspace)
+	@test s.z.mean == zeros(3, 1)
+	@test s.z.variance == fill(1 / 3, 3, 1)
+end
+
+@testset "Gaussian factor/weight transpose agreement" begin
+	Random.seed!(42)
+	X = randn(4, 3)
+	X[2, 1] = NaN
+	d = BigRiverEssence._mofa_preprocess([X]; center_groups = false)
+	Z, W = randn(4, 2), randn(3, 2)
+	s, workspace = BigRiverEssence._mofa_initialize(d, 2; init = :custom, z_init = Z, w_init = [W])
+	s.w[1].variance .= 0.1 .+ rand(3, 2)
+	BigRiverEssence._mofa_gaussian_moments!(s.w[1])
+	s.tau_mean[1] .= 2.0
+	dt = BigRiverEssence._mofa_preprocess([permutedims(X)]; center_groups = false)
+	t, scratch = BigRiverEssence._mofa_initialize(dt, 2; init = :custom, z_init = W, w_init = [Z])
+	t.z.variance .= s.w[1].variance
+	BigRiverEssence._mofa_gaussian_moments!(t.z)
+	t.tau_mean[1] .= 2.0
+	BigRiverEssence._mofa_update_factors!(d, s, workspace)
+	BigRiverEssence._mofa_update_weights!(dt, t, scratch)
+	@test s.z.mean ≈ t.w[1].mean atol = tol_ord
+	@test s.z.variance ≈ t.w[1].variance atol = tol_ord
+	@test s.z.second_moment ≈ t.w[1].second_moment atol = tol_ord
+end
+
+@testset "Gaussian factor update validation" begin
+	d = BigRiverEssence._mofa_preprocess([[1.0 2.0; 3.0 4.0], ones(2, 1)]; center_groups = false)
+	s, workspace = BigRiverEssence._mofa_initialize(d, 1; init = :custom,
+		z_init = ones(2, 1), w_init = [ones(2, 1), ones(1, 1)])
+	for field in (:feature_buffer, :factor_buffer)
+		bad_workspace = deepcopy(workspace)
+		empty!(getproperty(bad_workspace, field))
+		@test_throws DimensionMismatch BigRiverEssence._mofa_update_factors!(d, s, bad_workspace)
+	end
+	for field in (:w, :tau_mean)
+		bad = deepcopy(s)
+		pop!(getproperty(bad, field))
+		@test_throws DimensionMismatch BigRiverEssence._mofa_update_factors!(d, bad, workspace)
+	end
+	bad_data = deepcopy(d)
+	pop!(bad_data.missing_mask)
+	@test_throws DimensionMismatch BigRiverEssence._mofa_update_factors!(bad_data, s, workspace)
+	bad_data = deepcopy(d)
+	pop!(bad_data.group_indices)
+	@test_throws DimensionMismatch BigRiverEssence._mofa_update_factors!(bad_data, s, workspace)
+	for group in (0, 2)
+		bad_data = deepcopy(d)
+		bad_data.group_indices[1] = group
+		@test_throws ArgumentError BigRiverEssence._mofa_update_factors!(bad_data, s, workspace)
+	end
+	for field in (:mean, :variance, :second_moment)
+		bad = deepcopy(s)
+		bad.w[2] = BigRiverEssence.MofaGaussian(
+			field === :mean ? zeros(2, 1) : zeros(1, 1),
+			field === :variance ? ones(2, 1) : ones(1, 1),
+			field === :second_moment ? ones(2, 1) : ones(1, 1))
+		@test_throws DimensionMismatch BigRiverEssence._mofa_update_factors!(d, bad, workspace)
+		@test bad.z.mean == s.z.mean
+	end
+	bad = deepcopy(s)
+	bad.tau_mean[2] = ones(2, 1)
+	@test_throws DimensionMismatch BigRiverEssence._mofa_update_factors!(d, bad, workspace)
+	for field in (:data, :missing_mask)
+		bad_data = deepcopy(d)
+		if field === :data
+			bad_data.data[2] = ones(3, 1)
+		else
+			bad_data.missing_mask[2] = falses(2, 2)
+		end
+		@test_throws DimensionMismatch BigRiverEssence._mofa_update_factors!(bad_data, s, workspace)
+	end
+	bad_z = BigRiverEssence.MofaGaussian(ones(2, 1), ones(1, 1), ones(2, 1))
+	bad = BigRiverEssence.MofaState(bad_z, s.w, s.tau_shape, s.tau_rate, s.tau_mean, 1e-3, 1e-3)
+	@test_throws DimensionMismatch BigRiverEssence._mofa_update_factors!(d, bad, workspace)
+	for value in (0.0, -1.0, Inf, NaN)
+		bad = deepcopy(s)
+		bad.tau_mean[1][1, 1] = value
+		@test_throws ArgumentError BigRiverEssence._mofa_update_factors!(d, bad, workspace)
+		bad = deepcopy(s)
+		bad.w[1].second_moment[1, 1] = value
+		@test_throws ArgumentError BigRiverEssence._mofa_update_factors!(d, bad, workspace)
+	end
+	for value in (Inf, NaN)
+		bad = deepcopy(s)
+		bad.z.mean[1, 1] = value
+		@test_throws ArgumentError BigRiverEssence._mofa_update_factors!(d, bad, workspace)
+		bad = deepcopy(s)
+		bad.w[1].mean[1, 1] = value
+		@test_throws ArgumentError BigRiverEssence._mofa_update_factors!(d, bad, workspace)
+		bad_data = deepcopy(d)
+		bad_data.data[1][1, 1] = value
+		@test_throws ArgumentError BigRiverEssence._mofa_update_factors!(bad_data, deepcopy(s), workspace)
+	end
+	bad = deepcopy(s)
+	bad.tau_mean[1][1, 1] = floatmax(Float64)
+	@test_throws ArgumentError BigRiverEssence._mofa_update_factors!(d, bad, workspace)
+	bad_data = deepcopy(d)
+	bad_data.data[1][1, 1] = 1e200
+	@test_throws ArgumentError BigRiverEssence._mofa_update_factors!(bad_data, deepcopy(s), workspace)
+	for shape in ((0, 1), (2, 0))
+		bad_z = BigRiverEssence.MofaGaussian(zeros(shape...), ones(shape...), ones(shape...))
+		bad = BigRiverEssence.MofaState(bad_z, s.w, s.tau_shape, s.tau_rate, s.tau_mean, 1e-3, 1e-3)
+		@test_throws ArgumentError BigRiverEssence._mofa_update_factors!(d, bad, workspace)
+	end
+	for field in (:data, :group_labels)
+		bad_data = deepcopy(d)
+		empty!(getproperty(bad_data, field))
+		@test_throws ArgumentError BigRiverEssence._mofa_update_factors!(bad_data, s, workspace)
 	end
 end
 
