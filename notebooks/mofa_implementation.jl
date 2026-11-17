@@ -22,8 +22,12 @@
 # in Python's **mofapy2 0.7.5**.
 #
 # This is a reading notebook. All cells are explanatory Markdown, equations,
-# or pseudocode; it does not fit a model or install dependencies. The eventual
-# Julia implementation, tests, and method tutorial will be separate work.
+# or pseudocode; it does not fit a model or install dependencies. The Gaussian
+# Julia implementation is now available as `mofa` in `src/mofa.jl`, with
+# tests in `test/mofa_test.jl` and a tutorial in `docs/src/mofa_tutorial.md`.
+# The reading material also describes reference extensions not implemented
+# in Julia: non-Gaussian views, sparse sample factors, stochastic inference,
+# MEFISTO, weighted views, and explicit factor dropping.
 #
 # The aim is to preserve the selected MOFA model and inference procedure while
 # reducing computational cost, peak memory, and unnecessary allocations.
@@ -825,7 +829,8 @@
 # random seed alone does not guarantee identical PCA initialization or random
 # sequences across Python and Julia.
 #
-# No Julia mofa fitting API, numerical equivalence result, or performance
-# advantage is claimed by this notebook. It establishes the reference model
-# and algorithm that the forthcoming implementation can be checked against.
+# The Gaussian Julia fitting API now follows the selected reference path.
+# Its tests check complete fits, node-wise ELBOs, and stopping behavior against
+# saved outputs from the original Python engine with matched initialization.
+# This reading notebook does not claim a measured performance advantage.
 # -

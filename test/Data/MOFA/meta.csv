@@ -1,0 +1,9 @@
+case,ard_weights,ard_factors,spikeslab_weights,sweeps,start_sparsity
+aw0_az0_sw0,0,0,0,30,3
+aw0_az0_sw1,0,0,1,30,3
+aw0_az1_sw0,0,1,0,30,3
+aw0_az1_sw1,0,1,1,30,3
+aw1_az0_sw0,1,0,0,30,3
+aw1_az0_sw1,1,0,1,30,3
+aw1_az1_sw0,1,1,0,30,3
+aw1_az1_sw1,1,1,1,30,3

@@ -37,6 +37,7 @@ The package currently implements the following methods:
 * Canonical Correlation Analysis (CCA)[^5]
 * Sparse Canonical Correlation Analysis (SCCA)[^6]
 * Joint and Individual Variation Explained (JIVE)[^7]
+* Gaussian Multi-Omics Factor Analysis (MOFA)[^12][^13]
 * Partial Least Squares Kernel Regression (PLSkern)[^8]
 * Partial Least Squares Discriminant Analysis (PLSDA)[^9]
 * Sparse Partial Least Squares Discriminant Analysis (SPLSDA)[^10][^11]
@@ -96,4 +97,8 @@ If you have questions about contributing or using `BigRiverEssence` package, ple
 [^10]: Lê Cao, K.-A., Boitard, S., & Besse, P. (2011). *Sparse PLS Discriminant Analysis: Biologically Relevant Feature Selection and Graphical Displays for Multiclass Problems*. BMC Bioinformatics, 12, 253. 
 
 [^11]: Lê Cao, K.-A., Rossouw, D., Robert-Granié, C., & Besse, P. (2008). *A Sparse PLS for Variable Selection when Integrating Omics Data*. Statistical Applications in Genetics and Molecular Biology, 7(1), Article 35. 
+
+[^12]: Argelaguet, R., Velten, B., Arnol, D., et al. (2018). *Multi-Omics Factor Analysis—a framework for unsupervised integration of multi-omics data sets*. Molecular Systems Biology, 14, e8124. https://doi.org/10.15252/msb.20178124
+
+[^13]: Argelaguet, R., Arnol, D., Bredikhin, D., et al. (2020). *MOFA+: a statistical framework for comprehensive integration of multi-modal single-cell data*. Genome Biology, 21, 111. https://doi.org/10.1186/s13059-020-02015-1
 

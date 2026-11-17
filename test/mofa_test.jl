@@ -692,6 +692,429 @@ end
 	end
 end
 
+@testset "Gamma and Beta hyperparameter expectations" begin
+	q = BigRiverEssence.MofaGamma(ones(1, 2), ones(1, 2), zeros(1, 2), zeros(1, 2), 1e-14, 1e-14)
+	@test BigRiverEssence._mofa_gamma_moments!(q) === q
+	@test q.mean == ones(1, 2)
+	@test q.logmean ≈ fill(-0.5772156649015329, 1, 2) atol = tol_ord
+	q.shape .= 2.0
+	q.rate .= 4.0
+	BigRiverEssence._mofa_gamma_moments!(q)
+	@test q.mean == fill(0.5, 1, 2)
+	@test q.logmean ≈ fill(1 - 0.5772156649015329 - log(4), 1, 2) atol = tol_ord
+	@test BigRiverEssence._mofa_check_gamma(q, (1, 2)) === nothing
+	@test BigRiverEssence._mofa_check_gamma(nothing, (1, 2)) === nothing
+	@test_throws DimensionMismatch BigRiverEssence._mofa_check_gamma(q, (2, 1))
+	@test_throws DimensionMismatch BigRiverEssence._mofa_gamma_moments!(zeros(1, 2), zeros(1, 1), q.shape, q.rate)
+	q.mean[1] = NaN
+	@test_throws ArgumentError BigRiverEssence._mofa_check_gamma(q, (1, 2))
+	q.shape[1] = -1.0
+	@test_throws ArgumentError BigRiverEssence._mofa_gamma_moments!(q)
+	bad = BigRiverEssence.MofaGamma(ones(1, 1), ones(1, 1), ones(1, 1), zeros(1, 1), 0.0, 1.0)
+	@test_throws ArgumentError BigRiverEssence._mofa_gamma_moments!(bad)
+	b = BigRiverEssence.MofaBeta(ones(1, 2), ones(1, 2), zeros(1, 2), zeros(1, 2), zeros(1, 2), 1.0, 1.0)
+	@test BigRiverEssence._mofa_beta_moments!(b) === b
+	@test b.mean == fill(0.5, 1, 2)
+	@test b.logmean ≈ fill(-1.0, 1, 2) atol = tol_ord
+	@test b.logcomplement ≈ fill(-1.0, 1, 2) atol = tol_ord
+	b.a .= 2.0
+	b.b .= 3.0
+	BigRiverEssence._mofa_beta_moments!(b)
+	@test b.mean ≈ fill(2 / 5, 1, 2) atol = tol_ord
+	@test b.logmean ≈ fill(-13 / 12, 1, 2) atol = tol_ord
+	@test b.logcomplement ≈ fill(-7 / 12, 1, 2) atol = tol_ord
+	@test BigRiverEssence._mofa_check_beta(b, (1, 2)) === nothing
+	@test_throws DimensionMismatch BigRiverEssence._mofa_check_beta(b, (2, 1))
+	b.logmean[1] = Inf
+	@test_throws ArgumentError BigRiverEssence._mofa_check_beta(b, (1, 2))
+	b.a[1] = 0.0
+	@test_throws ArgumentError BigRiverEssence._mofa_beta_moments!(b)
+	bad_beta = BigRiverEssence.MofaBeta(ones(1, 1), ones(1, 2), ones(1, 1), zeros(1, 1), zeros(1, 1), 1.0, 1.0)
+	@test_throws DimensionMismatch BigRiverEssence._mofa_beta_moments!(bad_beta)
+end
+
+@testset "sparse-loading moments and stable inclusion probabilities" begin
+	q = BigRiverEssence.MofaSpikeSlab([2.0 -3.0; 0.0 1.0], [0.5 2.0; 1.0 0.1], [4.0, 5.0], [0.0 0.25; 1.0 1.0])
+	w = BigRiverEssence.MofaGaussian(zeros(2, 2), zeros(2, 2), zeros(2, 2))
+	@test BigRiverEssence._mofa_spike_moments!(w, q) === w
+	@test w.mean == [0.0 -0.75; 0.0 1.0]
+	@test w.second_moment ≈ [0.0 2.75; 1.0 1.1] atol = tol_ord
+	@test w.variance ≈ [0.0 2.1875; 1.0 0.1] atol = tol_ord
+	@test BigRiverEssence._mofa_check_spike(q, (2, 2)) === nothing
+	@test_throws DimensionMismatch BigRiverEssence._mofa_check_spike(q, (1, 2))
+	q.inclusion[1] = 1.1
+	@test_throws ArgumentError BigRiverEssence._mofa_spike_moments!(w, q)
+	for x in (-1000.0, -10.0, 0.0, 10.0, 1000.0)
+		@test 0 <= BigRiverEssence._mofa_logistic(x) <= 1
+	end
+	@test BigRiverEssence._mofa_logistic(-Inf) == 0.0
+	@test BigRiverEssence._mofa_logistic(Inf) == 1.0
+	@test BigRiverEssence._mofa_logistic(0.0) == 0.5
+	@test_throws ArgumentError BigRiverEssence._mofa_logistic(NaN)
+end
+
+@testset "optional ARD and sparse initialization" begin
+	d = BigRiverEssence._mofa_preprocess([[1.0 3.0; 2.0 1.0; 4.0 2.0], ones(3, 1)]; groups = [:b, :a, :b])
+	for aw in (false, true), az in (false, true), sw in (false, true)
+		s, _ = BigRiverEssence._mofa_initialize(d, 1; init = :custom, z_init = ones(3, 1),
+			ard_weights = aw, ard_factors = az, spikeslab_weights = sw)
+		@test (s.alpha_w !== nothing) == aw
+		@test (s.alpha_z !== nothing) == az
+		@test (s.spike_w !== nothing) == sw
+		@test (s.theta_w !== nothing) == sw
+		if aw
+			@test size(s.alpha_w.mean) == (2, 1)
+			@test s.alpha_w.mean == ones(2, 1)
+			@test s.alpha_w.prior_shape == s.alpha_w.prior_rate == 1e-14
+		end
+		if az
+			@test size(s.alpha_z.mean) == (2, 1)
+			@test s.alpha_z.mean == ones(2, 1)
+		end
+		if sw
+			@test s.theta_w.mean == fill(0.5, 2, 1)
+			@test all(q -> all(==(1.0), q.inclusion), s.spike_w)
+			@test s.spike_w[1].mean !== s.w[1].mean
+			@test length(s.spike_w[1].inactive_variance) == 1
+		end
+		@test s.tau_logmean[1] ≈ fill(-0.5772156649015329, 2, 2) atol = tol_ord
+	end
+end
+
+@testset "noise posterior: counts, uncertainty, missing groups, and stability" begin
+	d = BigRiverEssence._mofa_preprocess([reshape([5.0, NaN, 2.0], 3, 1)]; groups = [:a, :b, :a], center_groups = false)
+	s, workspace = BigRiverEssence._mofa_initialize(d, 1; init = :custom,
+		z_init = reshape([1.0, 4.0, 2.0], 3, 1), w_init = [ones(1, 1)])
+	s.z.variance[:, 1] .= [0.5, 0.25, 1.0]
+	s.w[1].variance[1] = 2.0
+	BigRiverEssence._mofa_gaussian_moments!(s.z)
+	BigRiverEssence._mofa_gaussian_moments!(s.w[1])
+	before = deepcopy(s)
+	d.data[1][2] = Inf  # masked: must be ignored
+	@test BigRiverEssence._mofa_check_moments(d, s) === nothing
+	@test BigRiverEssence._mofa_update_noise!(d, s, workspace) === s
+	@test s.tau_shape[1][:, 1] ≈ [1.001, 0.001] atol = tol_ord
+	@test s.tau_rate[1][:, 1] ≈ [15.251, 0.001] atol = tol_ord
+	@test s.tau_mean[1][:, 1] ≈ [1.001 / 15.251, 1.0] atol = tol_ord
+	@test all(isfinite, s.tau_logmean[1])
+	@test s.tau_logmean[1][2] < -900  # Gamma(.001,.001), not initial Gamma(1,1)
+	@test s.tau_logmean[1][1] != log(s.tau_mean[1][1])
+	@test s.z.mean == before.z.mean
+	@test s.w[1].mean == before.w[1].mean
+	@test s.z.second_moment == before.z.second_moment
+	# Nearly exact large reconstruction: the expanded Gram identity cancels,
+	# but explicit variances still contribute 1e4 + 1e4 to expected error.
+	d = BigRiverEssence._mofa_preprocess([fill(1e16, 1, 1)]; center_groups = false)
+	s, workspace = BigRiverEssence._mofa_initialize(d, 1; init = :custom,
+		z_init = fill(1e8, 1, 1), w_init = [fill(1e8, 1, 1)])
+	s.z.variance .= 1e-12
+	s.w[1].variance .= 1e-12
+	BigRiverEssence._mofa_gaussian_moments!(s.z)
+	BigRiverEssence._mofa_gaussian_moments!(s.w[1])
+	BigRiverEssence._mofa_update_noise!(d, s, workspace)
+	@test s.tau_rate[1][1] ≈ 1e4 + 0.001 atol = tol_ord
+	@test s.tau_shape[1][1] == 0.501
+end
+
+@testset "dense ARD updates and prior precision in coordinate updates" begin
+	d = BigRiverEssence._mofa_preprocess([ones(3, 2)]; groups = [:b, :a, :b], center_groups = false)
+	s, workspace = BigRiverEssence._mofa_initialize(d, 1; init = :custom,
+		z_init = reshape([1.0, 2.0, 3.0], 3, 1), w_init = [reshape([2.0, -1.0], 2, 1)],
+		ard_weights = true, ard_factors = true)
+	s.w[1].variance[:, 1] .= [0.5, 3.0]
+	BigRiverEssence._mofa_gaussian_moments!(s.w[1])
+	@test BigRiverEssence._mofa_update_ard!(d, s; factors = false) === s
+	@test s.alpha_w.shape[1] ≈ 1 + 1e-14 atol = tol_ord
+	@test s.alpha_w.rate[1] ≈ 4.25 + 1e-14 atol = tol_ord
+	@test s.alpha_z.shape == ones(2, 1)
+	frozen = deepcopy(s.alpha_w)
+	BigRiverEssence._mofa_update_ard!(d, s; weights = false)
+	@test s.alpha_z.shape[:, 1] ≈ [1 + 1e-14, 0.5 + 1e-14] atol = tol_ord
+	@test s.alpha_z.rate[:, 1] ≈ [6 + 1e-14, 2.5 + 1e-14] atol = tol_ord
+	@test s.alpha_w.mean == frozen.mean
+	d = BigRiverEssence._mofa_preprocess([fill(2.0, 1, 1)]; center_groups = false)
+	s, workspace = BigRiverEssence._mofa_initialize(d, 1; init = :custom, z_init = ones(1, 1),
+		ard_weights = true, ard_factors = true)
+	s.alpha_w.shape .= 4.0
+	s.alpha_z.shape .= 3.0
+	BigRiverEssence._mofa_gamma_moments!(s.alpha_w)
+	BigRiverEssence._mofa_gamma_moments!(s.alpha_z)
+	BigRiverEssence._mofa_update_weights!(d, s, workspace)
+	@test s.w[1].variance[1] ≈ 1 / 6 atol = tol_ord
+	@test s.w[1].mean[1] ≈ 1 / 3 atol = tol_ord
+	BigRiverEssence._mofa_update_factors!(d, s, workspace)
+	@test s.z.variance[1] ≈ 18 / 59 atol = tol_ord
+	@test s.z.mean[1] ≈ 12 / 59 atol = tol_ord
+end
+
+@testset "sparse weights, underlying ARD moment, and Beta updates" begin
+	d = BigRiverEssence._mofa_preprocess([reshape([3.0, 1.0], 2, 1)]; center_groups = false)
+	s, workspace = BigRiverEssence._mofa_initialize(d, 1; init = :custom,
+		z_init = reshape([1.0, 2.0], 2, 1), ard_weights = true, spikeslab_weights = true)
+	before_theta = deepcopy(s.theta_w)
+	BigRiverEssence._mofa_update_weights!(d, s, workspace)
+	g = inv(1 + exp(-(0.5 * log(1 / 8) + 25 / 16)))
+	@test s.spike_w[1].mean[1] ≈ 5 / 8 atol = tol_ord
+	@test s.spike_w[1].variance[1] ≈ 1 / 8 atol = tol_ord
+	@test s.spike_w[1].inclusion[1] ≈ g atol = tol_ord
+	@test s.w[1].mean[1] ≈ g * 5 / 8 atol = tol_ord
+	@test s.w[1].second_moment[1] ≈ g * 33 / 64 atol = tol_ord
+	@test s.theta_w.logmean == before_theta.logmean  # no implicit hyperparameter update
+	underlying = g * 33 / 64 + (1 - g)
+	BigRiverEssence._mofa_update_ard!(d, s; factors = false)
+	@test s.alpha_w.rate[1] ≈ 1e-14 + underlying / 2 atol = tol_ord
+	@test s.alpha_w.rate[1] > s.w[1].second_moment[1] / 2
+	@test s.spike_w[1].inactive_variance == [1.0]  # not retroactively replaced
+	@test BigRiverEssence._mofa_update_inclusions!(s) === s
+	@test s.theta_w.a[1] ≈ 1 + g atol = tol_ord
+	@test s.theta_w.b[1] ≈ 2 - g atol = tol_ord
+	@test s.theta_w.mean[1] ≈ (1 + g) / 3 atol = tol_ord
+	# Exact zero effective moments are legitimate for sparse weights.
+	s.spike_w[1].inclusion .= 0.0
+	BigRiverEssence._mofa_spike_moments!(s.w[1], s.spike_w[1])
+	BigRiverEssence._mofa_update_factors!(d, s, workspace)
+	@test s.z.mean == zeros(2, 1)
+	@test s.z.variance == ones(2, 1)
+	BigRiverEssence._mofa_update_noise!(d, s, workspace)
+	@test all(isfinite, s.tau_mean[1])
+	# Extreme Beta shapes produce saturated inclusions without exponential overflow.
+	s.theta_w.a .= 1e-300
+	s.theta_w.b .= 1.0
+	BigRiverEssence._mofa_beta_moments!(s.theta_w)
+	BigRiverEssence._mofa_update_weights!(d, s, workspace)
+	@test s.spike_w[1].inclusion == zeros(1, 1)
+end
+
+@testset "noise and regularization validation/no-op paths" begin
+	d = BigRiverEssence._mofa_preprocess([ones(2, 1)]; center_groups = false)
+	s, workspace = BigRiverEssence._mofa_initialize(d, 1; init = :custom, z_init = ones(2, 1))
+	@test BigRiverEssence._mofa_update_ard!(d, s) === s
+	@test BigRiverEssence._mofa_update_inclusions!(s) === s
+	bad_workspace = deepcopy(workspace)
+	empty!(bad_workspace.sample_buffer)
+	@test_throws DimensionMismatch BigRiverEssence._mofa_update_noise!(d, s, bad_workspace)
+	bad = deepcopy(s)
+	bad.tau_logmean[1] = zeros(2, 1)
+	@test_throws DimensionMismatch BigRiverEssence._mofa_update_noise!(d, bad, workspace)
+	bad = deepcopy(s)
+	pop!(bad.tau_rate)
+	@test_throws DimensionMismatch BigRiverEssence._mofa_update_noise!(d, bad, workspace)
+	bad = deepcopy(s)
+	bad.z.variance[1] = -1.0
+	@test_throws ArgumentError BigRiverEssence._mofa_check_moments(d, bad)
+	bad_data = deepcopy(d)
+	bad_data.group_indices[1] = 0
+	@test_throws ArgumentError BigRiverEssence._mofa_check_moments(bad_data, s)
+	bad_data = deepcopy(d)
+	bad_data.missing_mask[1] = falses(1, 1)
+	@test_throws DimensionMismatch BigRiverEssence._mofa_check_moments(bad_data, s)
+	bad_data = deepcopy(d)
+	bad_data.data[1][1] = Inf
+	@test_throws ArgumentError BigRiverEssence._mofa_update_noise!(bad_data, deepcopy(s), workspace)
+	t, scratch = BigRiverEssence._mofa_initialize(d, 1; init = :custom, z_init = ones(2, 1),
+		ard_weights = true, ard_factors = true, spikeslab_weights = true)
+	t.alpha_w.mean[1] = 0.0
+	@test_throws ArgumentError BigRiverEssence._mofa_update_weights!(d, t, scratch)
+	@test_throws ArgumentError BigRiverEssence._mofa_update_ard!(d, t)
+	t.alpha_w.mean[1] = 1.0
+	t.alpha_z.mean[1] = NaN
+	@test_throws ArgumentError BigRiverEssence._mofa_update_factors!(d, t, scratch)
+	t.alpha_z.mean[1] = 1.0
+	t.spike_w[1].inclusion[1] = -1.0
+	@test_throws ArgumentError BigRiverEssence._mofa_update_inclusions!(t)
+	@test_throws ArgumentError BigRiverEssence._mofa_update_weights!(d, t, scratch)
+	t.spike_w[1].inclusion[1] = 1.0
+	t.alpha_w.shape .= 0.5
+	t.alpha_w.rate .= floatmax(Float64)
+	BigRiverEssence._mofa_gamma_moments!(t.alpha_w)
+	@test_throws ArgumentError BigRiverEssence._mofa_update_weights!(d, t, scratch)
+end
+
+@testset "ELBO distributions, hand calculation, and validation" begin
+	q = BigRiverEssence.MofaBeta(fill(2.0, 1, 1), ones(1, 1), zeros(1, 1), zeros(1, 1), zeros(1, 1), 1.0, 1.0)
+	BigRiverEssence._mofa_beta_moments!(q)
+	@test BigRiverEssence._mofa_beta_elbo(q) ≈ 0.5 - log(2) atol = tol_ord
+	@test BigRiverEssence._mofa_gamma_elbo(ones(1, 1), ones(1, 1), ones(1, 1), fill(-Base.MathConstants.eulergamma, 1, 1), 1.0, 1.0) ≈ 0 atol = tol_ord
+	@test_throws DimensionMismatch BigRiverEssence._mofa_gamma_elbo(ones(1, 1), ones(2, 1), ones(1, 1), zeros(1, 1), 1.0, 1.0)
+	@test_throws ArgumentError BigRiverEssence._mofa_gamma_elbo(ones(1, 1), ones(1, 1), ones(1, 1), zeros(1, 1), 0.0, 1.0)
+	@test_throws ArgumentError BigRiverEssence._mofa_gamma_elbo(zeros(1, 1), ones(1, 1), ones(1, 1), zeros(1, 1), 1.0, 1.0)
+	d = BigRiverEssence._mofa_preprocess([fill(2.0, 1, 1)]; center_groups = false)
+	s, b = BigRiverEssence._mofa_initialize(d, 1; init = :custom, z_init = ones(1, 1))
+	before = deepcopy(s)
+	lb = BigRiverEssence._mofa_elbo(d, s, b)
+	@test lb.y ≈ -0.5 * (log(2pi) + Base.MathConstants.eulergamma + 6) atol = tol_ord
+	@test lb.w ≈ 0 atol = tol_ord
+	@test lb.z ≈ -0.5 atol = tol_ord
+	@test lb.alpha_w == lb.alpha_z == lb.theta_w == 0
+	@test lb.total ≈ sum(values(lb)[1:7]) atol = tol_ord
+	@test s.z.mean == before.z.mean && s.tau_rate == before.tau_rate
+	BigRiverEssence._mofa_update_noise!(d, s, b)
+	@test collect(values(BigRiverEssence._mofa_elbo(d, s, b))) ≈ collect(values(BigRiverEssence._mofa_elbo(d, s, b; noise_updated = true))) atol = tol_ord
+	bad_workspace = BigRiverEssence.MofaWorkspace(zeros(2), zeros(1), zeros(1))
+	@test_throws DimensionMismatch BigRiverEssence._mofa_elbo(d, s, bad_workspace)
+	bad = deepcopy(s)
+	bad.z.variance .= 0
+	@test_throws ArgumentError BigRiverEssence._mofa_elbo(d, bad, b)
+	bad = deepcopy(s)
+	bad.tau_shape[1][1] = NaN
+	@test_throws ArgumentError BigRiverEssence._mofa_elbo(d, bad, b)
+	# Sparse inclusion probabilities exactly zero and one must remain finite.
+	for inclusion in (0.0, 1.0)
+		ss, bb = BigRiverEssence._mofa_initialize(d, 1; init = :custom, z_init = ones(1, 1), spikeslab_weights = true)
+		ss.spike_w[1].inclusion .= inclusion
+		BigRiverEssence._mofa_spike_moments!(ss.w[1], ss.spike_w[1])
+		@test isfinite(BigRiverEssence._mofa_elbo(d, ss, bb).total)
+	end
+end
+
+@testset "ELBO convergence confirmations and gates" begin
+	for mode in (:fast, :medium, :slow)
+		@test BigRiverEssence._mofa_convergence(0.0, -100.0, 1, mode) == (2, false)
+		@test BigRiverEssence._mofa_convergence(0.0, -100.0, 2, mode) == (3, true)
+		@test BigRiverEssence._mofa_convergence(1.0, -100.0, 2, mode) == (1, false)
+	end
+	@test BigRiverEssence._mofa_convergence(1e-4, -100.0, 1, :fast) == (2, false)
+	@test BigRiverEssence._mofa_convergence(1e-4, -100.0, 1, :medium) == (1, false)
+	@test BigRiverEssence._mofa_convergence(0.0, 0.0, 1, :slow) == (2, false)
+	@test_throws ArgumentError BigRiverEssence._mofa_convergence(NaN, -1.0, 1, :fast)
+	@test_throws ArgumentError BigRiverEssence._mofa_convergence(0.0, Inf, 1, :fast)
+	@test_throws ArgumentError BigRiverEssence._mofa_convergence(0.0, -1.0, 3, :fast)
+	@test_throws ArgumentError BigRiverEssence._mofa_convergence(0.0, -1.0, 1, :invalid)
+	# Zero factor means stay zero, but variances/noise still need to settle.
+	# Check the actual ELBO confirmations rather than assuming immediate convergence.
+	kwargs = (k = 1, init = :custom, z_init = zeros(4, 1), ard_weights = false,
+		spikeslab_weights = false, freq_elbo = 1, center_groups = false)
+	X = [ones(4, 1)]
+	m = mofa(X; kwargs..., maxiter = 20)
+	@test m.converged && 3 <= m.niter < 20
+	@test m.elbo_iterations == collect(0:m.niter)
+	@test all(100 .* abs.(diff(m.elbo)[end-1:end]) ./ abs(m.elbo[1]) .< 5e-4)
+	m = mofa(X; kwargs..., maxiter = 20, miniter = 5)
+	@test m.converged && m.niter == 7
+	m = mofa(X; kwargs..., maxiter = 20, start_elbo = 5)
+	@test m.converged && m.niter == 7
+	m = mofa(X; kwargs..., maxiter = 4, forceiter = true)
+	@test !m.converged && m.niter == 4
+end
+
+@testset "full fits and ELBO components against mofapy2" begin
+	folder = joinpath(@__DIR__, "Data", "MOFA")
+	X = [readdlm(joinpath(folder, "X$m.csv"), ',', Float64) for m in 1:2]
+	groups = vec(Int.(readdlm(joinpath(folder, "groups.csv"), ',', Float64)))
+	Z = readdlm(joinpath(folder, "Z_init.csv"), ',', Float64)
+	for aw in (false, true), az in (false, true), sw in (false, true)
+		case = joinpath(folder, "aw$(Int(aw))_az$(Int(az))_sw$(Int(sw))")
+		ref = readdlm(joinpath(case, "elbo.csv"), ',', Float64)
+		d = BigRiverEssence._mofa_preprocess(X; groups)
+		s, b = BigRiverEssence._mofa_initialize(d, 2; init = :custom, z_init = Z,
+			ard_weights = aw, ard_factors = az, spikeslab_weights = sw)
+		@test collect(values(BigRiverEssence._mofa_elbo(d, s, b))) ≈ vec(ref[1, 2:9]) atol = tol_julia rtol = tol_ord
+		for iteration in 1:30
+			BigRiverEssence._mofa_update_weights!(d, s, b)
+			BigRiverEssence._mofa_update_ard!(d, s; weights = true, factors = false)
+			iteration >= 3 && BigRiverEssence._mofa_update_inclusions!(s)
+			BigRiverEssence._mofa_update_factors!(d, s, b)
+			BigRiverEssence._mofa_update_ard!(d, s; weights = false, factors = true)
+			BigRiverEssence._mofa_update_noise!(d, s, b)
+			explicit = collect(values(BigRiverEssence._mofa_elbo(d, s, b)))
+			fast = collect(values(BigRiverEssence._mofa_elbo(d, s, b; noise_updated = true)))
+			@test explicit ≈ vec(ref[iteration + 1, 2:9]) atol = tol_julia rtol = tol_ord
+			@test fast ≈ explicit atol = tol_ord rtol = tol_ord
+		end
+		m = mofa(X; k = 2, groups, init = :custom, z_init = Z,
+			ard_weights = aw, ard_factors = az, spikeslab_weights = sw,
+			start_sparsity = 3, freq_elbo = 1, maxiter = 30, forceiter = true)
+		@test m.elbo ≈ ref[:, 9] atol = tol_julia rtol = tol_ord
+		@test m.z ≈ s.z.mean atol = tol_ord
+		@test m.z === m.posterior.z.mean && m.w[1] === m.posterior.w[1].mean
+		@test m.elbo_iterations == collect(0:30)
+		@test m.niter == 30 && !m.converged
+		arrays = Any[m.z, m.posterior.z.variance]
+		for view in 1:2
+			append!(arrays, [m.w[view], m.posterior.w[view].second_moment,
+				m.posterior.tau_shape[view], m.posterior.tau_rate[view]])
+		end
+		if aw
+			for view in 1:2
+				append!(arrays, [m.posterior.alpha_w.shape[view, :], m.posterior.alpha_w.rate[view, :]])
+			end
+		end
+		az && append!(arrays, [m.posterior.alpha_z.shape, m.posterior.alpha_z.rate])
+		if sw
+			for view in 1:2
+				append!(arrays, [m.posterior.spike_w[view].inclusion,
+					m.posterior.theta_w.a[view, :], m.posterior.theta_w.b[view, :]])
+			end
+		end
+		@test vcat(vec.(arrays)...) ≈ vec(readdlm(joinpath(case, "posterior.csv"), ',', Float64)) atol = tol_julia rtol = tol_ord
+		@test m.r2 ≈ readdlm(joinpath(case, "r2.csv"), ',', Float64) atol = tol_ord
+		@test vec(m.factor_r2) ≈ vec(readdlm(joinpath(case, "factor_r2.csv"), ',', Float64)) atol = tol_ord
+		stopping = vec(readdlm(joinpath(case, "stopping.csv"), ',', Float64))
+		stopped = mofa(X; k = 2, groups, init = :custom, z_init = Z,
+			ard_weights = aw, ard_factors = az, spikeslab_weights = sw,
+			start_sparsity = 3, freq_elbo = 5, maxiter = 1000)
+		@test stopped.niter == Int(stopping[1])
+		@test stopped.converged == Bool(stopping[2])
+		@test stopped.elbo[end] ≈ stopping[3] atol = tol_julia rtol = tol_ord
+	end
+end
+
+@testset "public fit options, reconstruction, and input preservation" begin
+	Random.seed!(160)
+	Z = randn(30, 2)
+	X = [Z * randn(2, 7) + 0.02 * randn(30, 7), Z * randn(2, 5) + 0.02 * randn(30, 5)]
+	original = deepcopy(X)
+	# Dense model should recover the observed low-rank structure.
+	m = mofa(X; k = 2, ard_weights = false, spikeslab_weights = false,
+		maxiter = 100, forceiter = true)
+	@test minimum(m.r2) > 0.99
+	@test all(diff(m.elbo) .>= -tol_julia)
+	@test X == original
+	@test !hasfield(typeof(m), :data) && !hasfield(typeof(m), :workspace)
+	@test size(m.factor_r2) == (1, 2, 2)
+	@test all(q -> all(>(0), q), m.posterior.tau_mean)
+	# Restore the original measurement units, including interleaved groups.
+	groups = repeat(["b", "a"], 15)
+	m = mofa(X; k = 2, groups, scale_views = true, scale_groups = true,
+		ard_weights = false, spikeslab_weights = false, maxiter = 100, forceiter = true)
+	for view in 1:2
+		processed = m.z * transpose(m.w[view])
+		restored = [processed[i, j] * m.scales[m.group_indices[i], view] +
+			m.means[view][m.group_indices[i], j] for i in axes(processed, 1), j in axes(processed, 2)]
+		@test norm(restored - X[view]) / norm(X[view]) < 0.05
+	end
+	@test m.group_labels == ["b", "a"]
+	# Default model flags, PCA, random initialization, and reproducible RNG.
+	m = mofa(X; k = 2, maxiter = 2, forceiter = true)
+	@test m.options.ard_weights && m.options.spikeslab_weights && !m.options.ard_factors
+	@test m.posterior.alpha_w !== nothing && m.posterior.spike_w !== nothing
+	random_a = mofa(X; k = 2, init = :random, rng = MersenneTwister(160), maxiter = 3, forceiter = true)
+	random_b = mofa(X; k = 2, init = :random, rng = MersenneTwister(160), maxiter = 3, forceiter = true)
+	@test random_a.z == random_b.z && random_a.elbo == random_b.elbo
+	@test random_a.z != mofa(X; k = 2, init = :random, rng = MersenneTwister(161), maxiter = 3, forceiter = true).z
+	# Unscheduled final objective is retained once, but is not an early-stop check.
+	m = mofa(X; k = 2, maxiter = 4, freq_elbo = 5, forceiter = true)
+	@test m.elbo_iterations == [0, 1, 4]
+	m = mofa(X; k = 2, maxiter = 2, start_elbo = 5, forceiter = true)
+	@test m.elbo_iterations == [0, 2]
+	@test_logs (:warn, r"MOFA reached maxiter") mofa(X; k = 2, maxiter = 1)
+	@test_logs (:info, r"MOFA ELBO") mofa(X; k = 2, maxiter = 1, forceiter = true, verbose = true)
+	for kwargs in ((maxiter = 0,), (start_elbo = 0,), (freq_elbo = 0,),
+		(start_sparsity = 0,), (miniter = -1,), (convergence_mode = :invalid,), (k = 0,))
+		@test_throws ArgumentError mofa(X; kwargs...)
+	end
+	@test_throws ArgumentError mofa(X; init = :custom, k = 2)
+	@test_throws DimensionMismatch mofa(X; init = :custom, k = 2, z_init = ones(2, 2))
+	# R² is undefined for zero-energy and entirely missing group/view blocks.
+	d = BigRiverEssence._mofa_preprocess([zeros(3, 1), reshape([1.0, 2.0, NaN], 3, 1)]; groups = [1, 1, 2])
+	s, b = BigRiverEssence._mofa_initialize(d, 1; init = :custom, z_init = ones(3, 1))
+	r2, factor_r2 = BigRiverEssence._mofa_variance_explained(d, s, b)
+	@test all(isnan, r2[:, 1]) && isnan(r2[2, 2])
+	@test all(isnan, factor_r2[:, 1, :]) && isnan(factor_r2[2, 2, 1])
+	@test r2[1, 2] == 0
+	@test_throws DimensionMismatch BigRiverEssence._mofa_variance_explained(d, s, BigRiverEssence.MofaWorkspace(zeros(1), zeros(1), zeros(1)))
+end
+
 @testset "output structure & default centering" begin
 	X = [1.0 2.0; 3.0 6.0; 5.0 10.0]
 	Y = reshape([2.0, 4.0, 9.0], 3, 1)

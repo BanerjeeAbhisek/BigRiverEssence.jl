@@ -2,6 +2,7 @@ module BigRiverEssence
 
 
 using LinearAlgebra, Statistics, Random
+using SpecialFunctions: digamma, loggamma
 
 
 include("utils.jl")
@@ -14,6 +15,7 @@ include("nmf.jl")
 export Nmf, nmf, nmf_transform, nmf_invtransform
 
 include("mofa.jl")
+export Mofa, mofa
 
 include("pmd.jl")
 export Pmd, pmd
