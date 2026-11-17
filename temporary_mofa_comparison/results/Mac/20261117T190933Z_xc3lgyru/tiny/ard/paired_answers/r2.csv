@@ -1,5 +1,0 @@
-case,model,quantity,index_1based,julia_value,python_value,difference,within_tolerance
-tiny,ard,r2,"1,1",0.9812372618867913,0.9812372618867913,0.0,True
-tiny,ard,r2,"2,1",0.9764445887152837,0.9764445887152837,0.0,True
-tiny,ard,r2,"1,2",0.989341656141897,0.989341656141897,0.0,True
-tiny,ard,r2,"2,2",0.9884421777658995,0.9884421777658995,0.0,True

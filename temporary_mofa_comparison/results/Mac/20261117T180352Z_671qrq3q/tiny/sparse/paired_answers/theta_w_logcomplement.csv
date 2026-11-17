@@ -1,5 +1,0 @@
-case,model,quantity,index_1based,julia_value,python_value,difference,within_tolerance
-tiny,sparse,theta_w_logcomplement,"1,1",-2.5669956877535856,-2.5669956877535864,8.881784197001252e-16,True
-tiny,sparse,theta_w_logcomplement,"2,1",-1.3872080457496676,-1.387208045749667,-6.661338147750939e-16,True
-tiny,sparse,theta_w_logcomplement,"1,2",-3.1059393704659226,-3.1059393704659253,2.6645352591003757e-15,True
-tiny,sparse,theta_w_logcomplement,"2,2",-2.8289631200352106,-2.82896312003521,-4.440892098500626e-16,True

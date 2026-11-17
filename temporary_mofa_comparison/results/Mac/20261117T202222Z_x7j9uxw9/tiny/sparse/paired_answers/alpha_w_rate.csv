@@ -1,5 +1,0 @@
-case,model,quantity,index_1based,julia_value,python_value,difference,within_tolerance
-tiny,sparse,alpha_w_rate,"1,1",1.6245338374051002,1.6245338374050982,1.9984014443252818e-15,True
-tiny,sparse,alpha_w_rate,"2,1",1.8511283926807696,1.851128392680767,2.6645352591003757e-15,True
-tiny,sparse,alpha_w_rate,"1,2",2.040545680590194,2.040545680590199,-5.329070518200751e-15,True
-tiny,sparse,alpha_w_rate,"2,2",3.2126781996723737,3.2126781996723843,-1.0658141036401503e-14,True

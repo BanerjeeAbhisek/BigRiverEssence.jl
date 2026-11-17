@@ -32,3 +32,6 @@ JuliaLocalPreferences.toml
 
 docs/build/
 docs/src/index.md
+
+# Local temporary MOFA comparisons
+/temporary_mofa_comparison/

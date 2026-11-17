@@ -1,6 +1,0 @@
-case,model,quantity,index_1based,julia_value,python_value,difference,within_tolerance
-small,sparse,inactive_variance_2,1,0.03941683310151832,0.03941683310151832,0.0,True
-small,sparse,inactive_variance_2,2,0.03693210712086293,0.03693210712086296,-2.7755575615628914e-17,True
-small,sparse,inactive_variance_2,3,0.11719597624336253,0.11719597624336263,-9.71445146547012e-17,True
-small,sparse,inactive_variance_2,4,0.23523099429097624,0.23523099429097669,-4.440892098500626e-16,True
-small,sparse,inactive_variance_2,5,0.05119274453694307,0.05119274453694325,-1.8041124150158794e-16,True

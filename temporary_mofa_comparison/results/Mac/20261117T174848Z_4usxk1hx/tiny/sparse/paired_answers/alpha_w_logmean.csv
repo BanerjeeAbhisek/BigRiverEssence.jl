@@ -1,5 +1,0 @@
-case,model,quantity,index_1based,julia_value,python_value,difference,within_tolerance
-tiny,sparse,alpha_w_logmean,"1,1",1.2208967630941356,1.2208967630941372,-1.5543122344752192e-15,True
-tiny,sparse,alpha_w_logmean,"2,1",0.6403222732909752,0.6403222732909774,-2.1094237467877974e-15,True
-tiny,sparse,alpha_w_logmean,"1,2",0.9929004058594888,0.9929004058594869,1.887379141862766e-15,True
-tiny,sparse,alpha_w_logmean,"2,2",0.08901274903377199,0.08901274903376932,2.6645352591003757e-15,True

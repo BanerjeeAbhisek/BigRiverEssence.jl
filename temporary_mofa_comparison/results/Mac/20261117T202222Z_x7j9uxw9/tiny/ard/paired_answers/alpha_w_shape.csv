@@ -1,5 +1,0 @@
-case,model,quantity,index_1based,julia_value,python_value,difference,within_tolerance
-tiny,ard,alpha_w_shape,"1,1",6.00000000000001,6.00000000000001,0.0,True
-tiny,ard,alpha_w_shape,"2,1",4.00000000000001,4.00000000000001,0.0,True
-tiny,ard,alpha_w_shape,"1,2",6.00000000000001,6.00000000000001,0.0,True
-tiny,ard,alpha_w_shape,"2,2",4.00000000000001,4.00000000000001,0.0,True
