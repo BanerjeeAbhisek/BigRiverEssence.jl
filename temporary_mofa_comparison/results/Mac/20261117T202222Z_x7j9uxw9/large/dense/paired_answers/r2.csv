@@ -1,0 +1,5 @@
+case,model,quantity,index_1based,julia_value,python_value,difference,within_tolerance
+large,dense,r2,"1,1",0.9980898059546326,0.9980898059546326,0.0,True
+large,dense,r2,"2,1",0.9980039533970563,0.9980039533970563,0.0,True
+large,dense,r2,"1,2",0.998080462080112,0.998080462080112,0.0,True
+large,dense,r2,"2,2",0.9979836698764005,0.9979836698764005,0.0,True

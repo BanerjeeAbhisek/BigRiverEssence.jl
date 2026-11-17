@@ -1,0 +1,13 @@
+data_directory = "/Users/abhisekbanerjee/Desktop/UTHSC internship/Julia/BigRiverEssence.jl/temporary_mofa_comparison/results/Mac/20261117T181740Z__87cbmmj/tiny/inputs"
+repository = "/Users/abhisekbanerjee/Desktop/UTHSC internship/Julia/BigRiverEssence.jl"
+views = 2
+factors = 2
+threads = 4
+seed = 160
+sweeps = 50
+samples = 5
+freq_elbo = 5
+start_sparsity = 3
+ard_weights = true
+ard_factors = true
+spikeslab_weights = false

@@ -1,0 +1,4 @@
+case,model,arrays_compared,all_arrays_within_tolerance,python_time_over_julia,julia_time_min_s,python_time_min_s
+tiny,dense,23,True,9.25208383420826,0.000428417,0.00396375
+tiny,ard,31,True,10.766978391340519,0.000449542,0.004840209
+tiny,sparse,44,True,11.439391961745883,0.000482667,0.005521417

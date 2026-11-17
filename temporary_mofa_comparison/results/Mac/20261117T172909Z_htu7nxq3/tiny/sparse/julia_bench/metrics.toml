@@ -1,0 +1,16 @@
+blas = "LBTConfig([ILP64] libopenblas64_.dylib)"
+language = "Julia"
+sweeps = 10
+julia_allocated_kb = 26.496
+version = "1.12.6"
+blas_threads = 1
+package_path = "/Users/abhisekbanerjee/Desktop/UTHSC internship/Julia/BigRiverEssence.jl"
+final_elbo = -867.9764663236385
+time_min_s = 0.000482667
+converged = false
+time_median_s = 0.000485375
+julia_threads = 1
+benchmarktools_version = "1.8.0"
+julia_allocations = 163
+samples = 3
+package_version = "0.2.0"

@@ -1,0 +1,31 @@
+Precompiling packages...
+    579.8 ms  ✓ Unicode
+    584.5 ms  ✓ OpenLibm_jll
+    586.9 ms  ✓ CompilerSupportLibraries_jll
+    670.2 ms  ✓ LogExpFunctions
+    434.1 ms  ✓ Printf
+   2488.2 ms  ✓ Dates
+    565.8 ms  ✓ TOML
+    655.5 ms  ✓ Preferences
+    561.1 ms  ✓ JLLWrappers
+    802.5 ms  ✓ OpenSpecFun_jll
+   2307.2 ms  ✓ SpecialFunctions
+   1021.7 ms  ✓ BigRiverEssence
+  12 dependencies successfully precompiled in 9 seconds. 3 already precompiled.
+Precompiling packages...
+    494.7 ms  ✓ UUIDs
+    504.9 ms  ✓ Logging
+    530.9 ms  ✓ PrecompileTools
+   1859.3 ms  ✓ Compat
+   2084.7 ms  ✓ StructUtils
+    573.4 ms  ✓ Compat → CompatLinearAlgebraExt
+   8181.7 ms  ✓ Parsers
+   9380.9 ms  ✓ StyledStrings
+   5027.8 ms  ✓ Profile
+   5864.6 ms  ✓ JSON
+   4884.0 ms  ✓ BenchmarkTools
+  11 dependencies successfully precompiled in 20 seconds. 6 already precompiled.
+Precompiling packages...
+    375.1 ms  ✓ Mmap
+    537.8 ms  ✓ DelimitedFiles
+  2 dependencies successfully precompiled in 1 seconds

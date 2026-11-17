@@ -1,0 +1,48 @@
+  Activating new project at `/var/folders/yv/rwvtmm3n7l55qvgs5p5dy3tm0000gn/T/mofa-comparison-env-yw_cubwb`
+   Resolving package versions...
+    Updating `/private/var/folders/yv/rwvtmm3n7l55qvgs5p5dy3tm0000gn/T/mofa-comparison-env-yw_cubwb/Project.toml`
+  [2768b56d] + BigRiverEssence v0.2.0 `~/Desktop/UTHSC internship/Julia/BigRiverEssence.jl`
+    Updating `/private/var/folders/yv/rwvtmm3n7l55qvgs5p5dy3tm0000gn/T/mofa-comparison-env-yw_cubwb/Manifest.toml`
+  [2768b56d] + BigRiverEssence v0.2.0 `~/Desktop/UTHSC internship/Julia/BigRiverEssence.jl`
+  [ffbed154] + DocStringExtensions v0.10.2
+  [92d709cd] + IrrationalConstants v0.2.7
+  [692b3bcd] + JLLWrappers v1.8.0
+  [2ab3a3ac] + LogExpFunctions v1.0.6
+  [21216c6a] + Preferences v1.6.1
+  [276daf66] + SpecialFunctions v2.9.2
+  [10745b16] + Statistics v1.11.5
+  [efe28fd5] + OpenSpecFun_jll v0.5.6+0
+  [56f22d72] + Artifacts v1.11.0
+  [ade2ca70] + Dates v1.11.0
+  [8f399da3] + Libdl v1.11.0
+  [37e2e46d] + LinearAlgebra v1.12.0
+  [de0858da] + Printf v1.11.0
+  [9a3f8284] + Random v1.11.0
+  [ea8e919c] + SHA v0.7.0
+  [fa267f1f] + TOML v1.0.3
+  [4ec0a83e] + Unicode v1.11.0
+  [e66e0078] + CompilerSupportLibraries_jll v1.3.0+1
+  [4536629a] + OpenBLAS_jll v0.3.29+0
+  [05823500] + OpenLibm_jll v0.8.7+0
+  [8e850b90] + libblastrampoline_jll v5.15.0+0
+   Resolving package versions...
+    Updating `/private/var/folders/yv/rwvtmm3n7l55qvgs5p5dy3tm0000gn/T/mofa-comparison-env-yw_cubwb/Project.toml`
+  [6e4b80f9] + BenchmarkTools v1.8.0
+  [8bb1440f] + DelimitedFiles v1.9.1
+  [10745b16] + Statistics v1.11.5
+    Updating `/private/var/folders/yv/rwvtmm3n7l55qvgs5p5dy3tm0000gn/T/mofa-comparison-env-yw_cubwb/Manifest.toml`
+  [6e4b80f9] + BenchmarkTools v1.8.0
+  [34da2185] + Compat v4.18.1
+  [8bb1440f] + DelimitedFiles v1.9.1
+  [682c06a0] + JSON v1.13.4
+  [69de0a69] + Parsers v3.0.6
+  [aea7be01] + PrecompileTools v1.4.0
+  [ec057cc2] + StructUtils v2.12.1
+  [56ddb016] + Logging v1.11.0
+  [a63ad114] + Mmap v1.11.0
+  [9abbd945] + Profile v1.11.0
+  [f489334b] + StyledStrings v1.11.0
+  [cf7118a7] + UUIDs v1.11.0
+Precompiling packages...
+    903.9 ms  ✓ BigRiverEssence
+  1 dependency successfully precompiled in 1 seconds. 27 already precompiled.

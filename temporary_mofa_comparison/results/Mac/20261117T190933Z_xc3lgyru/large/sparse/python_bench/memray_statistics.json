@@ -1,0 +1,166 @@
+{
+  "total_num_allocations": 476581,
+  "total_bytes_allocated": 33428069193,
+  "allocation_size_histogram": [
+    {
+      "min_bytes": 0,
+      "max_bytes": 3,
+      "count": 22
+    },
+    {
+      "min_bytes": 4,
+      "max_bytes": 20,
+      "count": 8883
+    },
+    {
+      "min_bytes": 21,
+      "max_bytes": 100,
+      "count": 277617
+    },
+    {
+      "min_bytes": 101,
+      "max_bytes": 469,
+      "count": 82454
+    },
+    {
+      "min_bytes": 470,
+      "max_bytes": 2189,
+      "count": 14596
+    },
+    {
+      "min_bytes": 2190,
+      "max_bytes": 10202,
+      "count": 64534
+    },
+    {
+      "min_bytes": 10203,
+      "max_bytes": 47518,
+      "count": 24
+    },
+    {
+      "min_bytes": 47519,
+      "max_bytes": 221304,
+      "count": 17859
+    },
+    {
+      "min_bytes": 221305,
+      "max_bytes": 1030663,
+      "count": 276
+    },
+    {
+      "min_bytes": 1030664,
+      "max_bytes": 4800000,
+      "count": 10316
+    }
+  ],
+  "allocator_type_distribution": {
+    "PYMALLOC_MALLOC": 381123,
+    "MALLOC": 89100,
+    "PYMALLOC_CALLOC": 4052,
+    "CALLOC": 1225,
+    "PYMALLOC_REALLOC": 1042,
+    "REALLOC": 39
+  },
+  "top_allocations_by_size": [
+    {
+      "location": "dot:/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/python3.11/site-packages/mofapy2/core/gpu_utils.py:74",
+      "size": 25903010400
+    },
+    {
+      "location": "square:/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/python3.11/site-packages/mofapy2/core/gpu_utils.py:29",
+      "size": 824038400
+    },
+    {
+      "location": "getExpectation:/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/python3.11/site-packages/mofapy2/core/nodes/Tau_nodes.py:56",
+      "size": 800641600
+    },
+    {
+      "location": "_updateParameters:/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/python3.11/site-packages/mofapy2/core/nodes/Tau_nodes.py:122",
+      "size": 609775200
+    },
+    {
+      "location": "_updateParameters:/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/python3.11/site-packages/mofapy2/core/nodes/Tau_nodes.py:125",
+      "size": 609760800
+    }
+  ],
+  "top_allocations_by_count": [
+    {
+      "location": "_updateParameters:/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/python3.11/site-packages/mofapy2/core/nodes/W_nodes.py:289",
+      "count": 34000
+    },
+    {
+      "location": "_updateParameters:/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/python3.11/site-packages/mofapy2/core/nodes/Z_nodes.py:137",
+      "count": 30250
+    },
+    {
+      "location": "_updateParameters:/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/python3.11/site-packages/mofapy2/core/nodes/W_nodes.py:273",
+      "count": 30200
+    },
+    {
+      "location": "_updateParameters:/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/python3.11/site-packages/mofapy2/core/nodes/W_nodes.py:271",
+      "count": 30200
+    },
+    {
+      "location": "dot:/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/python3.11/site-packages/mofapy2/core/gpu_utils.py:74",
+      "count": 24200
+    }
+  ],
+  "top_modules_by_allocation_size": [
+    {
+      "module": "mofapy2",
+      "num_allocations": 437359,
+      "total_bytes": 33143837960
+    },
+    {
+      "module": "numpy",
+      "num_allocations": 25640,
+      "total_bytes": 274243881
+    },
+    {
+      "module": "_python_worker",
+      "num_allocations": 1145,
+      "total_bytes": 8213901
+    },
+    {
+      "module": "pandas",
+      "num_allocations": 12437,
+      "total_bytes": 1773451
+    }
+  ],
+  "top_modules_by_allocation_count": [
+    {
+      "module": "mofapy2",
+      "num_allocations": 437359,
+      "total_bytes": 33143837960
+    },
+    {
+      "module": "numpy",
+      "num_allocations": 25640,
+      "total_bytes": 274243881
+    },
+    {
+      "module": "pandas",
+      "num_allocations": 12437,
+      "total_bytes": 1773451
+    },
+    {
+      "module": "_python_worker",
+      "num_allocations": 1145,
+      "total_bytes": 8213901
+    }
+  ],
+  "metadata": {
+    "start_time": "2026-11-17 13:20:08.806000-06:00",
+    "end_time": "2026-11-17 13:20:25.622000-06:00",
+    "total_allocations": 951946,
+    "total_frames": 0,
+    "peak_memory": 32326815,
+    "command_line": "/Users/abhisekbanerjee/Desktop/UTHSC internship/Julia/BigRiverEssence.jl/temporary_mofa_comparison/_python_worker.py /Users/abhisekbanerjee/Desktop/UTHSC internship/Julia/BigRiverEssence.jl/temporary_mofa_comparison/results/Mac/20261117T190933Z_xc3lgyru/large/sparse/config.toml /Users/abhisekbanerjee/Desktop/UTHSC internship/Julia/BigRiverEssence.jl/temporary_mofa_comparison/results/Mac/20261117T190933Z_xc3lgyru/large/sparse/python_bench bench",
+    "pid": 63827,
+    "main_thread_id": 1,
+    "python_allocator": "pymalloc",
+    "has_native_traces": true,
+    "trace_python_allocators": true,
+    "file_format": 0
+  }
+}

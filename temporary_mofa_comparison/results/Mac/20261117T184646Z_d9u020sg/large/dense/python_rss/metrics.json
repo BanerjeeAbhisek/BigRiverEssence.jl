@@ -1,0 +1,41 @@
+{
+  "language": "Python",
+  "version": "3.11.16",
+  "package_version": "0.7.5",
+  "sweeps": 50,
+  "numpy_version": "2.3.5",
+  "scipy_version": "1.16.3",
+  "pandas_version": "3.0.5",
+  "memray_version": "1.20.0",
+  "python_executable": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/bin/python",
+  "mofapy2_install_source": {
+    "archive_info": {
+      "hash": "sha256=8277927c82219dee7f2dbbc2c1c0c346f30b720481bdf92729152d15f077581d",
+      "hashes": {
+        "sha256": "8277927c82219dee7f2dbbc2c1c0c346f30b720481bdf92729152d15f077581d"
+      }
+    },
+    "url": "https://github.com/bioFAM/mofapy2/archive/90418e5021b3ae735ebf1fea5d7e07cae71c8bb7.zip"
+  },
+  "threadpools": [
+    {
+      "user_api": "blas",
+      "internal_api": "openblas",
+      "num_threads": 4,
+      "prefix": "libopenblas",
+      "filepath": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/libopenblas.0.dylib",
+      "version": "0.3.29",
+      "threading_layer": "openmp",
+      "architecture": "VORTEX"
+    },
+    {
+      "user_api": "openmp",
+      "internal_api": "openmp",
+      "num_threads": 4,
+      "prefix": "libomp",
+      "filepath": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/libomp.dylib",
+      "version": null
+    }
+  ],
+  "final_elbo": -209074.33153872588
+}

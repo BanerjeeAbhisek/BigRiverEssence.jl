@@ -1,0 +1,459 @@
+{
+  "machine": {
+    "os": "Mac",
+    "processor": "Apple M1",
+    "physical_cores": 8,
+    "logical_cores": 8,
+    "ram_gb": 17.179869184,
+    "platform": "macOS-14.4.1-arm64-arm-64bit"
+  },
+  "arguments": {
+    "case": "tiny",
+    "model": "all",
+    "n": null,
+    "features": null,
+    "factors": null,
+    "groups": 2,
+    "missing": 0.02,
+    "sweeps": 10,
+    "samples": 3,
+    "threads": 1,
+    "seed": 160,
+    "freq_elbo": 5,
+    "start_sparsity": 3,
+    "rss_interval_ms": 1.0,
+    "timeout": 1800,
+    "rtol": 1e-05,
+    "atol": 1e-07,
+    "julia": "/Users/abhisekbanerjee/.juliaup/bin/julia",
+    "julia_arg": [],
+    "julia_project": "/var/folders/yv/rwvtmm3n7l55qvgs5p5dy3tm0000gn/T/mofa-comparison-env-cpc7lbfz",
+    "offline": false,
+    "repo": "/Users/abhisekbanerjee/Desktop/UTHSC internship/Julia/BigRiverEssence.jl",
+    "output": "/Users/abhisekbanerjee/Desktop/UTHSC internship/Julia/BigRiverEssence.jl/temporary_mofa_comparison/results"
+  },
+  "utc_started": "20261117T172909Z",
+  "git_commit": "330d20d93deb94b40c6e366c6184c71f03598e2d",
+  "git_status": "?? temporary_mofa_comparison/\n",
+  "mofa_source_sha256": "4869053406532d213779949cff6d7440cc13011f90be34a563b9591f80216e2c",
+  "memory_units": "decimal kB (1000 bytes)",
+  "workers": [
+    {
+      "case": "tiny",
+      "model": "dense",
+      "language": "Julia",
+      "timing": {
+        "blas": "LBTConfig([ILP64] libopenblas64_.dylib)",
+        "language": "Julia",
+        "sweeps": 10,
+        "julia_allocated_kb": 23.12,
+        "version": "1.12.6",
+        "blas_threads": 1,
+        "package_path": "/Users/abhisekbanerjee/Desktop/UTHSC internship/Julia/BigRiverEssence.jl",
+        "final_elbo": -641.8844445401181,
+        "time_min_s": 0.000428417,
+        "converged": false,
+        "time_median_s": 0.000433917,
+        "julia_threads": 1,
+        "benchmarktools_version": "1.8.0",
+        "julia_allocations": 116,
+        "samples": 3,
+        "package_version": "0.2.0"
+      },
+      "memory": {
+        "julia_threads": 1,
+        "blas": "LBTConfig([ILP64] libopenblas64_.dylib)",
+        "benchmarktools_version": "1.8.0",
+        "final_elbo": -641.8844445401181,
+        "sweeps": 10,
+        "language": "Julia",
+        "package_version": "0.2.0",
+        "version": "1.12.6",
+        "blas_threads": 1,
+        "package_path": "/Users/abhisekbanerjee/Desktop/UTHSC internship/Julia/BigRiverEssence.jl",
+        "baseline_rss_kb": 488095.744,
+        "peak_rss_kb": 488095.744,
+        "incremental_peak_rss_kb": 0.0,
+        "rss_samples": 4,
+        "rss_interval_ms": 1.0
+      }
+    },
+    {
+      "case": "tiny",
+      "model": "dense",
+      "language": "Python",
+      "timing": {
+        "language": "Python",
+        "version": "3.11.16",
+        "package_version": "0.7.5",
+        "sweeps": 10,
+        "numpy_version": "2.3.5",
+        "scipy_version": "1.16.3",
+        "pandas_version": "3.0.5",
+        "python_executable": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/bin/python",
+        "mofapy2_install_source": {
+          "archive_info": {
+            "hash": "sha256=8277927c82219dee7f2dbbc2c1c0c346f30b720481bdf92729152d15f077581d",
+            "hashes": {
+              "sha256": "8277927c82219dee7f2dbbc2c1c0c346f30b720481bdf92729152d15f077581d"
+            }
+          },
+          "url": "https://github.com/bioFAM/mofapy2/archive/90418e5021b3ae735ebf1fea5d7e07cae71c8bb7.zip"
+        },
+        "threadpools": [
+          {
+            "user_api": "blas",
+            "internal_api": "openblas",
+            "num_threads": 1,
+            "prefix": "libopenblas",
+            "filepath": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/libopenblas.0.dylib",
+            "version": "0.3.29",
+            "threading_layer": "openmp",
+            "architecture": "VORTEX"
+          },
+          {
+            "user_api": "openmp",
+            "internal_api": "openmp",
+            "num_threads": 1,
+            "prefix": "libomp",
+            "filepath": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/libomp.dylib",
+            "version": null
+          }
+        ],
+        "time_min_s": 0.00396375,
+        "time_median_s": 0.004055583,
+        "samples": 3,
+        "converged": false,
+        "python_traced_retained_blocks": 432,
+        "python_traced_retained_kb": 50.908,
+        "python_traced_peak_kb": 81.839,
+        "final_elbo": -641.8844445401177
+      },
+      "memory": {
+        "language": "Python",
+        "version": "3.11.16",
+        "package_version": "0.7.5",
+        "sweeps": 10,
+        "numpy_version": "2.3.5",
+        "scipy_version": "1.16.3",
+        "pandas_version": "3.0.5",
+        "python_executable": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/bin/python",
+        "mofapy2_install_source": {
+          "archive_info": {
+            "hash": "sha256=8277927c82219dee7f2dbbc2c1c0c346f30b720481bdf92729152d15f077581d",
+            "hashes": {
+              "sha256": "8277927c82219dee7f2dbbc2c1c0c346f30b720481bdf92729152d15f077581d"
+            }
+          },
+          "url": "https://github.com/bioFAM/mofapy2/archive/90418e5021b3ae735ebf1fea5d7e07cae71c8bb7.zip"
+        },
+        "threadpools": [
+          {
+            "user_api": "blas",
+            "internal_api": "openblas",
+            "num_threads": 1,
+            "prefix": "libopenblas",
+            "filepath": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/libopenblas.0.dylib",
+            "version": "0.3.29",
+            "threading_layer": "openmp",
+            "architecture": "VORTEX"
+          },
+          {
+            "user_api": "openmp",
+            "internal_api": "openmp",
+            "num_threads": 1,
+            "prefix": "libomp",
+            "filepath": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/libomp.dylib",
+            "version": null
+          }
+        ],
+        "final_elbo": -641.8844445401177,
+        "baseline_rss_kb": 167608.32,
+        "peak_rss_kb": 167608.32,
+        "incremental_peak_rss_kb": 0.0,
+        "rss_samples": 7,
+        "rss_interval_ms": 1.0
+      }
+    },
+    {
+      "case": "tiny",
+      "model": "ard",
+      "language": "Julia",
+      "timing": {
+        "blas": "LBTConfig([ILP64] libopenblas64_.dylib)",
+        "language": "Julia",
+        "sweeps": 10,
+        "julia_allocated_kb": 24.144,
+        "version": "1.12.6",
+        "blas_threads": 1,
+        "package_path": "/Users/abhisekbanerjee/Desktop/UTHSC internship/Julia/BigRiverEssence.jl",
+        "final_elbo": -862.9899892906683,
+        "time_min_s": 0.000449542,
+        "converged": false,
+        "time_median_s": 0.000461542,
+        "julia_threads": 1,
+        "benchmarktools_version": "1.8.0",
+        "julia_allocations": 134,
+        "samples": 3,
+        "package_version": "0.2.0"
+      },
+      "memory": {
+        "julia_threads": 1,
+        "blas": "LBTConfig([ILP64] libopenblas64_.dylib)",
+        "benchmarktools_version": "1.8.0",
+        "final_elbo": -862.9899892906683,
+        "sweeps": 10,
+        "language": "Julia",
+        "package_version": "0.2.0",
+        "version": "1.12.6",
+        "blas_threads": 1,
+        "package_path": "/Users/abhisekbanerjee/Desktop/UTHSC internship/Julia/BigRiverEssence.jl",
+        "baseline_rss_kb": 492568.576,
+        "peak_rss_kb": 492568.576,
+        "incremental_peak_rss_kb": 0.0,
+        "rss_samples": 4,
+        "rss_interval_ms": 1.0
+      }
+    },
+    {
+      "case": "tiny",
+      "model": "ard",
+      "language": "Python",
+      "timing": {
+        "language": "Python",
+        "version": "3.11.16",
+        "package_version": "0.7.5",
+        "sweeps": 10,
+        "numpy_version": "2.3.5",
+        "scipy_version": "1.16.3",
+        "pandas_version": "3.0.5",
+        "python_executable": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/bin/python",
+        "mofapy2_install_source": {
+          "archive_info": {
+            "hash": "sha256=8277927c82219dee7f2dbbc2c1c0c346f30b720481bdf92729152d15f077581d",
+            "hashes": {
+              "sha256": "8277927c82219dee7f2dbbc2c1c0c346f30b720481bdf92729152d15f077581d"
+            }
+          },
+          "url": "https://github.com/bioFAM/mofapy2/archive/90418e5021b3ae735ebf1fea5d7e07cae71c8bb7.zip"
+        },
+        "threadpools": [
+          {
+            "user_api": "blas",
+            "internal_api": "openblas",
+            "num_threads": 1,
+            "prefix": "libopenblas",
+            "filepath": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/libopenblas.0.dylib",
+            "version": "0.3.29",
+            "threading_layer": "openmp",
+            "architecture": "VORTEX"
+          },
+          {
+            "user_api": "openmp",
+            "internal_api": "openmp",
+            "num_threads": 1,
+            "prefix": "libomp",
+            "filepath": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/libomp.dylib",
+            "version": null
+          }
+        ],
+        "time_min_s": 0.004840209,
+        "time_median_s": 0.005337833,
+        "samples": 3,
+        "converged": false,
+        "python_traced_retained_blocks": 610,
+        "python_traced_retained_kb": 65.308,
+        "python_traced_peak_kb": 96.111,
+        "final_elbo": -862.9899892906683
+      },
+      "memory": {
+        "language": "Python",
+        "version": "3.11.16",
+        "package_version": "0.7.5",
+        "sweeps": 10,
+        "numpy_version": "2.3.5",
+        "scipy_version": "1.16.3",
+        "pandas_version": "3.0.5",
+        "python_executable": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/bin/python",
+        "mofapy2_install_source": {
+          "archive_info": {
+            "hash": "sha256=8277927c82219dee7f2dbbc2c1c0c346f30b720481bdf92729152d15f077581d",
+            "hashes": {
+              "sha256": "8277927c82219dee7f2dbbc2c1c0c346f30b720481bdf92729152d15f077581d"
+            }
+          },
+          "url": "https://github.com/bioFAM/mofapy2/archive/90418e5021b3ae735ebf1fea5d7e07cae71c8bb7.zip"
+        },
+        "threadpools": [
+          {
+            "user_api": "blas",
+            "internal_api": "openblas",
+            "num_threads": 1,
+            "prefix": "libopenblas",
+            "filepath": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/libopenblas.0.dylib",
+            "version": "0.3.29",
+            "threading_layer": "openmp",
+            "architecture": "VORTEX"
+          },
+          {
+            "user_api": "openmp",
+            "internal_api": "openmp",
+            "num_threads": 1,
+            "prefix": "libomp",
+            "filepath": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/libomp.dylib",
+            "version": null
+          }
+        ],
+        "final_elbo": -862.9899892906683,
+        "baseline_rss_kb": 166871.04,
+        "peak_rss_kb": 166871.04,
+        "incremental_peak_rss_kb": 0.0,
+        "rss_samples": 7,
+        "rss_interval_ms": 1.0
+      }
+    },
+    {
+      "case": "tiny",
+      "model": "sparse",
+      "language": "Julia",
+      "timing": {
+        "blas": "LBTConfig([ILP64] libopenblas64_.dylib)",
+        "language": "Julia",
+        "sweeps": 10,
+        "julia_allocated_kb": 26.496,
+        "version": "1.12.6",
+        "blas_threads": 1,
+        "package_path": "/Users/abhisekbanerjee/Desktop/UTHSC internship/Julia/BigRiverEssence.jl",
+        "final_elbo": -867.9764663236385,
+        "time_min_s": 0.000482667,
+        "converged": false,
+        "time_median_s": 0.000485375,
+        "julia_threads": 1,
+        "benchmarktools_version": "1.8.0",
+        "julia_allocations": 163,
+        "samples": 3,
+        "package_version": "0.2.0"
+      },
+      "memory": {
+        "julia_threads": 1,
+        "blas": "LBTConfig([ILP64] libopenblas64_.dylib)",
+        "benchmarktools_version": "1.8.0",
+        "final_elbo": -867.9764663236385,
+        "sweeps": 10,
+        "language": "Julia",
+        "package_version": "0.2.0",
+        "version": "1.12.6",
+        "blas_threads": 1,
+        "package_path": "/Users/abhisekbanerjee/Desktop/UTHSC internship/Julia/BigRiverEssence.jl",
+        "baseline_rss_kb": 403062.784,
+        "peak_rss_kb": 403685.376,
+        "incremental_peak_rss_kb": 622.592,
+        "rss_samples": 3,
+        "rss_interval_ms": 1.0
+      }
+    },
+    {
+      "case": "tiny",
+      "model": "sparse",
+      "language": "Python",
+      "timing": {
+        "language": "Python",
+        "version": "3.11.16",
+        "package_version": "0.7.5",
+        "sweeps": 10,
+        "numpy_version": "2.3.5",
+        "scipy_version": "1.16.3",
+        "pandas_version": "3.0.5",
+        "python_executable": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/bin/python",
+        "mofapy2_install_source": {
+          "archive_info": {
+            "hash": "sha256=8277927c82219dee7f2dbbc2c1c0c346f30b720481bdf92729152d15f077581d",
+            "hashes": {
+              "sha256": "8277927c82219dee7f2dbbc2c1c0c346f30b720481bdf92729152d15f077581d"
+            }
+          },
+          "url": "https://github.com/bioFAM/mofapy2/archive/90418e5021b3ae735ebf1fea5d7e07cae71c8bb7.zip"
+        },
+        "threadpools": [
+          {
+            "user_api": "blas",
+            "internal_api": "openblas",
+            "num_threads": 1,
+            "prefix": "libopenblas",
+            "filepath": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/libopenblas.0.dylib",
+            "version": "0.3.29",
+            "threading_layer": "openmp",
+            "architecture": "VORTEX"
+          },
+          {
+            "user_api": "openmp",
+            "internal_api": "openmp",
+            "num_threads": 1,
+            "prefix": "libomp",
+            "filepath": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/libomp.dylib",
+            "version": null
+          }
+        ],
+        "time_min_s": 0.005521417,
+        "time_median_s": 0.005671125,
+        "samples": 3,
+        "converged": false,
+        "python_traced_retained_blocks": 878,
+        "python_traced_retained_kb": 86.801,
+        "python_traced_peak_kb": 118.58,
+        "final_elbo": -867.9764663236383
+      },
+      "memory": {
+        "language": "Python",
+        "version": "3.11.16",
+        "package_version": "0.7.5",
+        "sweeps": 10,
+        "numpy_version": "2.3.5",
+        "scipy_version": "1.16.3",
+        "pandas_version": "3.0.5",
+        "python_executable": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/bin/python",
+        "mofapy2_install_source": {
+          "archive_info": {
+            "hash": "sha256=8277927c82219dee7f2dbbc2c1c0c346f30b720481bdf92729152d15f077581d",
+            "hashes": {
+              "sha256": "8277927c82219dee7f2dbbc2c1c0c346f30b720481bdf92729152d15f077581d"
+            }
+          },
+          "url": "https://github.com/bioFAM/mofapy2/archive/90418e5021b3ae735ebf1fea5d7e07cae71c8bb7.zip"
+        },
+        "threadpools": [
+          {
+            "user_api": "blas",
+            "internal_api": "openblas",
+            "num_threads": 1,
+            "prefix": "libopenblas",
+            "filepath": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/libopenblas.0.dylib",
+            "version": "0.3.29",
+            "threading_layer": "openmp",
+            "architecture": "VORTEX"
+          },
+          {
+            "user_api": "openmp",
+            "internal_api": "openmp",
+            "num_threads": 1,
+            "prefix": "libomp",
+            "filepath": "/Users/abhisekbanerjee/opt/anaconda3/envs/bigriveressence-benchmarks/lib/libomp.dylib",
+            "version": null
+          }
+        ],
+        "final_elbo": -867.9764663236383,
+        "baseline_rss_kb": 167837.696,
+        "peak_rss_kb": 167854.08,
+        "incremental_peak_rss_kb": 16.384,
+        "rss_samples": 7,
+        "rss_interval_ms": 1.0
+      }
+    }
+  ],
+  "input_sha256": {
+    "tiny/inputs/groups.csv": "ee1638b44eb65eeb3f968f0a5667b162e815d3f68b863b0e1fc0b4c2107dc47f",
+    "tiny/inputs/Z_init.csv": "4289019d8d8e205f2954bef3ef5cdcf547e7850db702599cda63e875b7a3242b",
+    "tiny/inputs/X1.csv": "449fa0e6136b00d270cb2463948d8aeed3543e978ab3c1e236ce21ef39c91cce",
+    "tiny/inputs/X2.csv": "3921c2507e8b72120b7c78e4e4eacfd0b61caca1a7747a95fae2e435d908aee8"
+  }
+}

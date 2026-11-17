@@ -1,0 +1,295 @@
+case,model,quantity,elements,shape,paired_answers,max_abs_diff,relative_frobenius_diff,within_tolerance,rtol,atol
+tiny,dense,elbo,12,12,paired_answers/elbo.csv,1.8189894035458565e-12,4.559032453120209e-16,True,1e-05,1e-07
+tiny,dense,elbo_iterations,12,12,paired_answers/elbo_iterations.csv,0.0,0.0,True,1e-05,1e-07
+tiny,dense,factor_r2,8,2 × 2 × 2,paired_answers/factor_r2.csv,7.771561172376096e-16,6.519111257600464e-16,True,1e-05,1e-07
+tiny,dense,r2,4,2 × 2,paired_answers/r2.csv,0.0,0.0,True,1e-05,1e-07
+tiny,dense,reconstruction_1,720,60 × 12,paired_answers/reconstruction_1.csv,2.6645352591003757e-15,5.461179874615193e-16,True,1e-05,1e-07
+tiny,dense,reconstruction_2,480,60 × 8,paired_answers/reconstruction_2.csv,2.9976021664879227e-15,4.4120560166879124e-16,True,1e-05,1e-07
+tiny,dense,tau_logmean_1,24,2 × 12,paired_answers/tau_logmean_1.csv,1.2434497875801753e-14,1.366084921908122e-15,True,1e-05,1e-07
+tiny,dense,tau_logmean_2,16,2 × 8,paired_answers/tau_logmean_2.csv,1.2878587085651816e-14,1.833512417509505e-15,True,1e-05,1e-07
+tiny,dense,tau_mean_1,24,2 × 12,paired_answers/tau_mean_1.csv,4.121147867408581e-13,5.645277949742636e-15,True,1e-05,1e-07
+tiny,dense,tau_mean_2,16,2 × 8,paired_answers/tau_mean_2.csv,2.6645352591003757e-13,5.398929213673456e-15,True,1e-05,1e-07
+tiny,dense,tau_rate_1,24,2 × 12,paired_answers/tau_rate_1.csv,5.329070518200751e-15,3.206654659523905e-15,True,1e-05,1e-07
+tiny,dense,tau_rate_2,16,2 × 8,paired_answers/tau_rate_2.csv,1.0325074129013956e-14,5.90418229536183e-15,True,1e-05,1e-07
+tiny,dense,tau_shape_1,24,2 × 12,paired_answers/tau_shape_1.csv,0.0,0.0,True,1e-05,1e-07
+tiny,dense,tau_shape_2,16,2 × 8,paired_answers/tau_shape_2.csv,0.0,0.0,True,1e-05,1e-07
+tiny,dense,w_mean_1,24,12 × 2,paired_answers/w_mean_1.csv,1.1102230246251565e-15,7.514053755946989e-16,True,1e-05,1e-07
+tiny,dense,w_mean_2,16,8 × 2,paired_answers/w_mean_2.csv,9.992007221626409e-16,6.375648641608507e-16,True,1e-05,1e-07
+tiny,dense,w_second_moment_1,24,12 × 2,paired_answers/w_second_moment_1.csv,2.886579864025407e-15,1.2626619436122293e-15,True,1e-05,1e-07
+tiny,dense,w_second_moment_2,16,8 × 2,paired_answers/w_second_moment_2.csv,2.6645352591003757e-15,1.03687674685272e-15,True,1e-05,1e-07
+tiny,dense,w_variance_1,24,12 × 2,paired_answers/w_variance_1.csv,7.589415207398531e-19,9.197336633803972e-16,True,1e-05,1e-07
+tiny,dense,w_variance_2,16,8 × 2,paired_answers/w_variance_2.csv,8.456776945386935e-18,7.200944625455799e-15,True,1e-05,1e-07
+tiny,dense,z_mean,120,60 × 2,paired_answers/z_mean.csv,3.1086244689504383e-15,7.302946215575272e-16,True,1e-05,1e-07
+tiny,dense,z_second_moment,120,60 × 2,paired_answers/z_second_moment.csv,1.7763568394002505e-14,1.1755389782526849e-15,True,1e-05,1e-07
+tiny,dense,z_variance,120,60 × 2,paired_answers/z_variance.csv,1.5612511283791264e-17,6.73941128034493e-17,True,1e-05,1e-07
+tiny,ard,alpha_w_logmean,4,2 × 2,paired_answers/alpha_w_logmean.csv,5.773159728050814e-15,2.5556302722942142e-15,True,1e-05,1e-07
+tiny,ard,alpha_w_mean,4,2 × 2,paired_answers/alpha_w_mean.csv,3.375077994860476e-14,4.000868499100794e-15,True,1e-05,1e-07
+tiny,ard,alpha_w_rate,4,2 × 2,paired_answers/alpha_w_rate.csv,5.773159728050814e-15,3.781352431471186e-15,True,1e-05,1e-07
+tiny,ard,alpha_w_shape,4,2 × 2,paired_answers/alpha_w_shape.csv,0.0,0.0,True,1e-05,1e-07
+tiny,ard,alpha_z_logmean,4,2 × 2,paired_answers/alpha_z_logmean.csv,5.329070518200751e-15,2.10767614838562e-15,True,1e-05,1e-07
+tiny,ard,alpha_z_mean,4,2 × 2,paired_answers/alpha_z_mean.csv,1.3600232051658168e-15,4.755687535225293e-15,True,1e-05,1e-07
+tiny,ard,alpha_z_rate,4,2 × 2,paired_answers/alpha_z_rate.csv,4.405364961712621e-13,3.1052375648317557e-15,True,1e-05,1e-07
+tiny,ard,alpha_z_shape,4,2 × 2,paired_answers/alpha_z_shape.csv,0.0,0.0,True,1e-05,1e-07
+tiny,ard,elbo,12,12,paired_answers/elbo.csv,2.7284841053187847e-12,5.4139414026501945e-16,True,1e-05,1e-07
+tiny,ard,elbo_iterations,12,12,paired_answers/elbo_iterations.csv,0.0,0.0,True,1e-05,1e-07
+tiny,ard,factor_r2,8,2 × 2 × 2,paired_answers/factor_r2.csv,6.661338147750939e-16,8.408633638847597e-16,True,1e-05,1e-07
+tiny,ard,r2,4,2 × 2,paired_answers/r2.csv,0.0,0.0,True,1e-05,1e-07
+tiny,ard,reconstruction_1,720,60 × 12,paired_answers/reconstruction_1.csv,4.884981308350689e-15,7.299217603221506e-16,True,1e-05,1e-07
+tiny,ard,reconstruction_2,480,60 × 8,paired_answers/reconstruction_2.csv,5.329070518200751e-15,7.421914258017211e-16,True,1e-05,1e-07
+tiny,ard,tau_logmean_1,24,2 × 12,paired_answers/tau_logmean_1.csv,1.8207657603852567e-14,1.8940314482721e-15,True,1e-05,1e-07
+tiny,ard,tau_logmean_2,16,2 × 8,paired_answers/tau_logmean_2.csv,1.554312234475219e-14,2.2854853999553817e-15,True,1e-05,1e-07
+tiny,ard,tau_mean_1,24,2 × 12,paired_answers/tau_mean_1.csv,7.531752999057062e-13,7.731468854205277e-15,True,1e-05,1e-07
+tiny,ard,tau_mean_2,16,2 × 8,paired_answers/tau_mean_2.csv,3.019806626980426e-13,6.207461787795271e-15,True,1e-05,1e-07
+tiny,ard,tau_rate_1,24,2 × 12,paired_answers/tau_rate_1.csv,9.159339953157541e-15,4.994479108487496e-15,True,1e-05,1e-07
+tiny,ard,tau_rate_2,16,2 × 8,paired_answers/tau_rate_2.csv,1.2323475573339238e-14,8.442022291193406e-15,True,1e-05,1e-07
+tiny,ard,tau_shape_1,24,2 × 12,paired_answers/tau_shape_1.csv,0.0,0.0,True,1e-05,1e-07
+tiny,ard,tau_shape_2,16,2 × 8,paired_answers/tau_shape_2.csv,0.0,0.0,True,1e-05,1e-07
+tiny,ard,w_mean_1,24,12 × 2,paired_answers/w_mean_1.csv,2.1094237467877974e-15,2.354043436309346e-15,True,1e-05,1e-07
+tiny,ard,w_mean_2,16,8 × 2,paired_answers/w_mean_2.csv,2.220446049250313e-15,1.882908558055006e-15,True,1e-05,1e-07
+tiny,ard,w_second_moment_1,24,12 × 2,paired_answers/w_second_moment_1.csv,3.219646771412954e-15,4.8364887029133115e-15,True,1e-05,1e-07
+tiny,ard,w_second_moment_2,16,8 × 2,paired_answers/w_second_moment_2.csv,3.885780586188048e-15,3.2637169355171522e-15,True,1e-05,1e-07
+tiny,ard,w_variance_1,24,12 × 2,paired_answers/w_variance_1.csv,1.7076184216646695e-18,6.422847236687628e-15,True,1e-05,1e-07
+tiny,ard,w_variance_2,16,8 × 2,paired_answers/w_variance_2.csv,6.2341624917916505e-18,1.4938208941516823e-14,True,1e-05,1e-07
+tiny,ard,z_mean,120,60 × 2,paired_answers/z_mean.csv,1.865174681370263e-14,1.8999384442447597e-15,True,1e-05,1e-07
+tiny,ard,z_second_moment,120,60 × 2,paired_answers/z_second_moment.csv,2.2737367544323206e-13,3.539757398138239e-15,True,1e-05,1e-07
+tiny,ard,z_variance,120,60 × 2,paired_answers/z_variance.csv,2.7533531010703882e-14,2.9355545434425986e-15,True,1e-05,1e-07
+tiny,sparse,alpha_w_logmean,4,2 × 2,paired_answers/alpha_w_logmean.csv,2.6645352591003757e-15,2.4608353307056038e-15,True,1e-05,1e-07
+tiny,sparse,alpha_w_mean,4,2 × 2,paired_answers/alpha_w_mean.csv,6.217248937900877e-15,1.8989908625189717e-15,True,1e-05,1e-07
+tiny,sparse,alpha_w_rate,4,2 × 2,paired_answers/alpha_w_rate.csv,8.881784197001252e-15,2.3612540299256056e-15,True,1e-05,1e-07
+tiny,sparse,alpha_w_shape,4,2 × 2,paired_answers/alpha_w_shape.csv,0.0,0.0,True,1e-05,1e-07
+tiny,sparse,alpha_z_logmean,4,2 × 2,paired_answers/alpha_z_logmean.csv,3.1086244689504383e-15,2.057039000630965e-15,True,1e-05,1e-07
+tiny,sparse,alpha_z_mean,4,2 × 2,paired_answers/alpha_z_mean.csv,9.992007221626409e-16,1.9384510636595723e-15,True,1e-05,1e-07
+tiny,sparse,alpha_z_rate,4,2 × 2,paired_answers/alpha_z_rate.csv,1.4921397450962104e-13,2.2141731059369657e-15,True,1e-05,1e-07
+tiny,sparse,alpha_z_shape,4,2 × 2,paired_answers/alpha_z_shape.csv,0.0,0.0,True,1e-05,1e-07
+tiny,sparse,elbo,12,12,paired_answers/elbo.csv,2.7284841053187847e-12,4.907637160222009e-16,True,1e-05,1e-07
+tiny,sparse,elbo_iterations,12,12,paired_answers/elbo_iterations.csv,0.0,0.0,True,1e-05,1e-07
+tiny,sparse,factor_r2,8,2 × 2 × 2,paired_answers/factor_r2.csv,5.551115123125783e-16,6.747120245829618e-16,True,1e-05,1e-07
+tiny,sparse,inactive_variance_1,2,2,paired_answers/inactive_variance_1.csv,7.216449660063518e-16,1.949503484154803e-15,True,1e-05,1e-07
+tiny,sparse,inactive_variance_2,2,2,paired_answers/inactive_variance_2.csv,2.3314683517128287e-15,2.5853167880781236e-15,True,1e-05,1e-07
+tiny,sparse,inclusion_1,24,12 × 2,paired_answers/inclusion_1.csv,2.4424906541753444e-15,5.483829429707041e-16,True,1e-05,1e-07
+tiny,sparse,inclusion_2,16,8 × 2,paired_answers/inclusion_2.csv,6.661338147750939e-16,1.7892989404937173e-16,True,1e-05,1e-07
+tiny,sparse,r2,4,2 × 2,paired_answers/r2.csv,1.1102230246251565e-16,5.642183286865558e-17,True,1e-05,1e-07
+tiny,sparse,reconstruction_1,720,60 × 12,paired_answers/reconstruction_1.csv,3.552713678800501e-15,6.446428307079263e-16,True,1e-05,1e-07
+tiny,sparse,reconstruction_2,480,60 × 8,paired_answers/reconstruction_2.csv,6.217248937900877e-15,6.097017495763269e-16,True,1e-05,1e-07
+tiny,sparse,slab_mean_1,24,12 × 2,paired_answers/slab_mean_1.csv,1.6653345369377348e-15,1.1583423588080104e-15,True,1e-05,1e-07
+tiny,sparse,slab_mean_2,16,8 × 2,paired_answers/slab_mean_2.csv,2.3314683517128287e-15,1.3914409932909401e-15,True,1e-05,1e-07
+tiny,sparse,slab_variance_1,24,12 × 2,paired_answers/slab_variance_1.csv,2.3310346708438345e-18,4.434395747076408e-15,True,1e-05,1e-07
+tiny,sparse,slab_variance_2,16,8 × 2,paired_answers/slab_variance_2.csv,7.914675859144182e-18,9.972396862093673e-15,True,1e-05,1e-07
+tiny,sparse,tau_logmean_1,24,2 × 12,paired_answers/tau_logmean_1.csv,7.993605777301127e-15,1.313341308350741e-15,True,1e-05,1e-07
+tiny,sparse,tau_logmean_2,16,2 × 8,paired_answers/tau_logmean_2.csv,3.9968028886505635e-14,3.846621621082995e-15,True,1e-05,1e-07
+tiny,sparse,tau_mean_1,24,2 × 12,paired_answers/tau_mean_1.csv,3.339550858072471e-13,4.286793180533581e-15,True,1e-05,1e-07
+tiny,sparse,tau_mean_2,16,2 × 8,paired_answers/tau_mean_2.csv,1.3855583347321954e-12,1.4791633800569285e-14,True,1e-05,1e-07
+tiny,sparse,tau_rate_1,24,2 × 12,paired_answers/tau_rate_1.csv,5.88418203051333e-15,3.958627636042824e-15,True,1e-05,1e-07
+tiny,sparse,tau_rate_2,16,2 × 8,paired_answers/tau_rate_2.csv,1.9984014443252818e-14,1.073847079587748e-14,True,1e-05,1e-07
+tiny,sparse,tau_shape_1,24,2 × 12,paired_answers/tau_shape_1.csv,0.0,0.0,True,1e-05,1e-07
+tiny,sparse,tau_shape_2,16,2 × 8,paired_answers/tau_shape_2.csv,0.0,0.0,True,1e-05,1e-07
+tiny,sparse,theta_w_a,4,2 × 2,paired_answers/theta_w_a.csv,1.7763568394002505e-15,1.1763156314211563e-16,True,1e-05,1e-07
+tiny,sparse,theta_w_b,4,2 × 2,paired_answers/theta_w_b.csv,1.7763568394002505e-15,6.792085141762653e-16,True,1e-05,1e-07
+tiny,sparse,theta_w_logcomplement,4,2 × 2,paired_answers/theta_w_logcomplement.csv,2.6645352591003757e-15,5.709704829265724e-16,True,1e-05,1e-07
+tiny,sparse,theta_w_logmean,4,2 × 2,paired_answers/theta_w_logmean.csv,4.440892098500626e-16,1.2401367411691203e-15,True,1e-05,1e-07
+tiny,sparse,theta_w_mean,4,2 × 2,paired_answers/theta_w_mean.csv,2.220446049250313e-16,1.577044315995095e-16,True,1e-05,1e-07
+tiny,sparse,w_mean_1,24,12 × 2,paired_answers/w_mean_1.csv,1.6653345369377348e-15,1.1614505614997442e-15,True,1e-05,1e-07
+tiny,sparse,w_mean_2,16,8 × 2,paired_answers/w_mean_2.csv,2.3314683517128287e-15,1.3908475765684002e-15,True,1e-05,1e-07
+tiny,sparse,w_second_moment_1,24,12 × 2,paired_answers/w_second_moment_1.csv,2.886579864025407e-15,2.3420236974120644e-15,True,1e-05,1e-07
+tiny,sparse,w_second_moment_2,16,8 × 2,paired_answers/w_second_moment_2.csv,6.217248937900877e-15,2.6840309443185703e-15,True,1e-05,1e-07
+tiny,sparse,w_variance_1,24,12 × 2,paired_answers/w_variance_1.csv,5.659535340374333e-17,6.857660732383785e-14,True,1e-05,1e-07
+tiny,sparse,w_variance_2,16,8 × 2,paired_answers/w_variance_2.csv,1.432773170939594e-16,1.6345951457295136e-13,True,1e-05,1e-07
+tiny,sparse,z_mean,120,60 × 2,paired_answers/z_mean.csv,6.661338147750939e-15,1.2459505160109662e-15,True,1e-05,1e-07
+tiny,sparse,z_second_moment,120,60 × 2,paired_answers/z_second_moment.csv,4.796163466380676e-14,2.219810652843732e-15,True,1e-05,1e-07
+tiny,sparse,z_variance,120,60 × 2,paired_answers/z_variance.csv,7.549516567451064e-15,2.10391728116772e-15,True,1e-05,1e-07
+small,dense,elbo,12,12,paired_answers/elbo.csv,1.2223608791828156e-09,4.240506882574754e-15,True,1e-05,1e-07
+small,dense,elbo_iterations,12,12,paired_answers/elbo_iterations.csv,0.0,0.0,True,1e-05,1e-07
+small,dense,factor_r2,20,2 × 2 × 5,paired_answers/factor_r2.csv,4.107825191113079e-15,8.732271486344143e-15,True,1e-05,1e-07
+small,dense,r2,4,2 × 2,paired_answers/r2.csv,1.1102230246251565e-16,7.909559891646225e-17,True,1e-05,1e-07
+small,dense,reconstruction_1,20000,200 × 100,paired_answers/reconstruction_1.csv,2.5757174171303632e-14,8.090479208895651e-16,True,1e-05,1e-07
+small,dense,reconstruction_2,12000,200 × 60,paired_answers/reconstruction_2.csv,1.2434497875801753e-14,7.64371234398667e-16,True,1e-05,1e-07
+small,dense,tau_logmean_1,200,2 × 100,paired_answers/tau_logmean_1.csv,2.4424906541753444e-14,2.0821043620183023e-15,True,1e-05,1e-07
+small,dense,tau_logmean_2,120,2 × 60,paired_answers/tau_logmean_2.csv,2.886579864025407e-14,2.1035170671482927e-15,True,1e-05,1e-07
+small,dense,tau_mean_1,200,2 × 100,paired_answers/tau_mean_1.csv,5.684341886080801e-13,6.753921358307131e-15,True,1e-05,1e-07
+small,dense,tau_mean_2,120,2 × 60,paired_answers/tau_mean_2.csv,6.892264536872972e-13,6.651978702655067e-15,True,1e-05,1e-07
+small,dense,tau_rate_1,200,2 × 100,paired_answers/tau_rate_1.csv,5.81756864903582e-14,6.6494990742855435e-15,True,1e-05,1e-07
+small,dense,tau_rate_2,120,2 × 60,paired_answers/tau_rate_2.csv,5.81756864903582e-14,6.767687702355419e-15,True,1e-05,1e-07
+small,dense,tau_shape_1,200,2 × 100,paired_answers/tau_shape_1.csv,0.0,0.0,True,1e-05,1e-07
+small,dense,tau_shape_2,120,2 × 60,paired_answers/tau_shape_2.csv,0.0,0.0,True,1e-05,1e-07
+small,dense,w_mean_1,500,100 × 5,paired_answers/w_mean_1.csv,2.7755575615628914e-15,1.2818128724869813e-15,True,1e-05,1e-07
+small,dense,w_mean_2,300,60 × 5,paired_answers/w_mean_2.csv,2.6645352591003757e-15,1.332404402510103e-15,True,1e-05,1e-07
+small,dense,w_second_moment_1,500,100 × 5,paired_answers/w_second_moment_1.csv,3.6637359812630166e-15,2.166697721930976e-15,True,1e-05,1e-07
+small,dense,w_second_moment_2,300,60 × 5,paired_answers/w_second_moment_2.csv,5.995204332975845e-15,2.581937697413181e-15,True,1e-05,1e-07
+small,dense,w_variance_1,500,100 × 5,paired_answers/w_variance_1.csv,9.622294280808852e-19,7.376987659661357e-15,True,1e-05,1e-07
+small,dense,w_variance_2,300,60 × 5,paired_answers/w_variance_2.csv,7.453889935837843e-19,6.090006082512736e-15,True,1e-05,1e-07
+small,dense,z_mean,1000,200 × 5,paired_answers/z_mean.csv,2.5757174171303632e-14,1.315734674966269e-15,True,1e-05,1e-07
+small,dense,z_second_moment,1000,200 × 5,paired_answers/z_second_moment.csv,4.121147867408581e-13,2.3410963975839237e-15,True,1e-05,1e-07
+small,dense,z_variance,1000,200 × 5,paired_answers/z_variance.csv,1.1275702593849246e-17,5.937989496481427e-17,True,1e-05,1e-07
+small,ard,alpha_w_logmean,10,2 × 5,paired_answers/alpha_w_logmean.csv,6.217248937900877e-15,1.15865762901131e-15,True,1e-05,1e-07
+small,ard,alpha_w_mean,10,2 × 5,paired_answers/alpha_w_mean.csv,1.4921397450962104e-13,3.7082840843898126e-15,True,1e-05,1e-07
+small,ard,alpha_w_rate,10,2 × 5,paired_answers/alpha_w_rate.csv,1.0658141036401503e-14,3.579564393787558e-15,True,1e-05,1e-07
+small,ard,alpha_w_shape,10,2 × 5,paired_answers/alpha_w_shape.csv,0.0,0.0,True,1e-05,1e-07
+small,ard,alpha_z_logmean,10,2 × 5,paired_answers/alpha_z_logmean.csv,7.993605777301127e-15,1.234099005100304e-15,True,1e-05,1e-07
+small,ard,alpha_z_mean,10,2 × 5,paired_answers/alpha_z_mean.csv,3.0531133177191805e-16,3.576566584414618e-15,True,1e-05,1e-07
+small,ard,alpha_z_rate,10,2 × 5,paired_answers/alpha_z_rate.csv,9.322320693172514e-12,3.888498811799827e-15,True,1e-05,1e-07
+small,ard,alpha_z_shape,10,2 × 5,paired_answers/alpha_z_shape.csv,0.0,0.0,True,1e-05,1e-07
+small,ard,elbo,12,12,paired_answers/elbo.csv,1.1641532182693481e-09,4.063880246364839e-15,True,1e-05,1e-07
+small,ard,elbo_iterations,12,12,paired_answers/elbo_iterations.csv,0.0,0.0,True,1e-05,1e-07
+small,ard,factor_r2,20,2 × 2 × 5,paired_answers/factor_r2.csv,6.661338147750939e-15,1.2695020677896293e-14,True,1e-05,1e-07
+small,ard,r2,4,2 × 2,paired_answers/r2.csv,0.0,0.0,True,1e-05,1e-07
+small,ard,reconstruction_1,20000,200 × 100,paired_answers/reconstruction_1.csv,2.3092638912203256e-14,7.902714716620399e-16,True,1e-05,1e-07
+small,ard,reconstruction_2,12000,200 × 60,paired_answers/reconstruction_2.csv,1.2434497875801753e-14,7.700389031427793e-16,True,1e-05,1e-07
+small,ard,tau_logmean_1,200,2 × 100,paired_answers/tau_logmean_1.csv,3.4638958368304884e-14,2.416436010124909e-15,True,1e-05,1e-07
+small,ard,tau_logmean_2,120,2 × 60,paired_answers/tau_logmean_2.csv,2.2648549702353193e-14,1.895888412717858e-15,True,1e-05,1e-07
+small,ard,tau_mean_1,200,2 × 100,paired_answers/tau_mean_1.csv,9.876544027065393e-13,8.145974026777656e-15,True,1e-05,1e-07
+small,ard,tau_mean_2,120,2 × 60,paired_answers/tau_mean_2.csv,6.181721801112872e-13,6.074917429836175e-15,True,1e-05,1e-07
+small,ard,tau_rate_1,200,2 × 100,paired_answers/tau_rate_1.csv,5.906386491005833e-14,7.38605595722664e-15,True,1e-05,1e-07
+small,ard,tau_rate_2,120,2 × 60,paired_answers/tau_rate_2.csv,5.639932965095795e-14,6.048220494263037e-15,True,1e-05,1e-07
+small,ard,tau_shape_1,200,2 × 100,paired_answers/tau_shape_1.csv,0.0,0.0,True,1e-05,1e-07
+small,ard,tau_shape_2,120,2 × 60,paired_answers/tau_shape_2.csv,0.0,0.0,True,1e-05,1e-07
+small,ard,w_mean_1,500,100 × 5,paired_answers/w_mean_1.csv,2.0539125955565396e-15,2.023458672720127e-15,True,1e-05,1e-07
+small,ard,w_mean_2,300,60 × 5,paired_answers/w_mean_2.csv,2.3314683517128287e-15,2.199911905525711e-15,True,1e-05,1e-07
+small,ard,w_second_moment_1,500,100 × 5,paired_answers/w_second_moment_1.csv,2.1649348980190553e-15,3.714804823499508e-15,True,1e-05,1e-07
+small,ard,w_second_moment_2,300,60 × 5,paired_answers/w_second_moment_2.csv,2.55351295663786e-15,4.734993368779583e-15,True,1e-05,1e-07
+small,ard,w_variance_1,500,100 × 5,paired_answers/w_variance_1.csv,2.303929616531697e-19,6.600690712290765e-15,True,1e-05,1e-07
+small,ard,w_variance_2,300,60 × 5,paired_answers/w_variance_2.csv,2.795208725939191e-19,7.24270241123144e-15,True,1e-05,1e-07
+small,ard,z_mean,1000,200 × 5,paired_answers/z_mean.csv,6.394884621840902e-14,2.1974003126867136e-15,True,1e-05,1e-07
+small,ard,z_second_moment,1000,200 × 5,paired_answers/z_second_moment.csv,2.1600499167107046e-12,4.269117440293143e-15,True,1e-05,1e-07
+small,ard,z_variance,1000,200 × 5,paired_answers/z_variance.csv,1.7053025658242404e-13,4.089093291958736e-15,True,1e-05,1e-07
+small,sparse,alpha_w_logmean,10,2 × 5,paired_answers/alpha_w_logmean.csv,7.549516567451064e-15,1.3648713659406251e-15,True,1e-05,1e-07
+small,sparse,alpha_w_mean,10,2 × 5,paired_answers/alpha_w_mean.csv,2.0605739337042905e-13,4.254739383750443e-15,True,1e-05,1e-07
+small,sparse,alpha_w_rate,10,2 × 5,paired_answers/alpha_w_rate.csv,2.3092638912203256e-14,2.4915755649324015e-15,True,1e-05,1e-07
+small,sparse,alpha_w_shape,10,2 × 5,paired_answers/alpha_w_shape.csv,0.0,0.0,True,1e-05,1e-07
+small,sparse,alpha_z_logmean,10,2 × 5,paired_answers/alpha_z_logmean.csv,8.881784197001252e-15,1.2791780547422284e-15,True,1e-05,1e-07
+small,sparse,alpha_z_mean,10,2 × 5,paired_answers/alpha_z_mean.csv,3.2612801348363973e-16,1.6151173288162345e-15,True,1e-05,1e-07
+small,sparse,alpha_z_rate,10,2 × 5,paired_answers/alpha_z_rate.csv,1.1368683772161603e-11,4.097997672773911e-15,True,1e-05,1e-07
+small,sparse,alpha_z_shape,10,2 × 5,paired_answers/alpha_z_shape.csv,0.0,0.0,True,1e-05,1e-07
+small,sparse,elbo,12,12,paired_answers/elbo.csv,1.1641532182693481e-09,4.039007990805402e-15,True,1e-05,1e-07
+small,sparse,elbo_iterations,12,12,paired_answers/elbo_iterations.csv,0.0,0.0,True,1e-05,1e-07
+small,sparse,factor_r2,20,2 × 2 × 5,paired_answers/factor_r2.csv,4.773959005888173e-15,1.088683491657491e-14,True,1e-05,1e-07
+small,sparse,inactive_variance_1,5,5,paired_answers/inactive_variance_1.csv,5.551115123125783e-16,2.9880637869176467e-15,True,1e-05,1e-07
+small,sparse,inactive_variance_2,5,5,paired_answers/inactive_variance_2.csv,4.996003610813204e-16,2.1810165233544246e-15,True,1e-05,1e-07
+small,sparse,inclusion_1,500,100 × 5,paired_answers/inclusion_1.csv,3.2529534621517087e-14,3.2693472906344247e-15,True,1e-05,1e-07
+small,sparse,inclusion_2,300,60 × 5,paired_answers/inclusion_2.csv,1.6209256159527285e-14,2.001357529687441e-15,True,1e-05,1e-07
+small,sparse,r2,4,2 × 2,paired_answers/r2.csv,1.1102230246251565e-16,5.592877561290903e-17,True,1e-05,1e-07
+small,sparse,reconstruction_1,20000,200 × 100,paired_answers/reconstruction_1.csv,1.9539925233402755e-14,9.339422031221718e-16,True,1e-05,1e-07
+small,sparse,reconstruction_2,12000,200 × 60,paired_answers/reconstruction_2.csv,1.4210854715202004e-14,9.191401876435081e-16,True,1e-05,1e-07
+small,sparse,slab_mean_1,500,100 × 5,paired_answers/slab_mean_1.csv,2.55351295663786e-15,1.95811229227664e-15,True,1e-05,1e-07
+small,sparse,slab_mean_2,300,60 × 5,paired_answers/slab_mean_2.csv,2.220446049250313e-15,1.8125644329688098e-15,True,1e-05,1e-07
+small,sparse,slab_variance_1,500,100 × 5,paired_answers/slab_variance_1.csv,1.5449880957918438e-18,7.031678708081903e-15,True,1e-05,1e-07
+small,sparse,slab_variance_2,300,60 × 5,paired_answers/slab_variance_2.csv,8.063753657860939e-19,6.7812035133093796e-15,True,1e-05,1e-07
+small,sparse,tau_logmean_1,200,2 × 100,paired_answers/tau_logmean_1.csv,3.241851231905457e-14,2.3346217151101863e-15,True,1e-05,1e-07
+small,sparse,tau_logmean_2,120,2 × 60,paired_answers/tau_logmean_2.csv,3.1530333899354446e-14,2.8235883121256458e-15,True,1e-05,1e-07
+small,sparse,tau_mean_1,200,2 × 100,paired_answers/tau_mean_1.csv,8.100187187665142e-13,7.804777123104171e-15,True,1e-05,1e-07
+small,sparse,tau_mean_2,120,2 × 60,paired_answers/tau_mean_2.csv,1.0444978215673473e-12,9.591948846673666e-15,True,1e-05,1e-07
+small,sparse,tau_rate_1,200,2 × 100,paired_answers/tau_rate_1.csv,6.616929226765933e-14,7.229727418493722e-15,True,1e-05,1e-07
+small,sparse,tau_rate_2,120,2 × 60,paired_answers/tau_rate_2.csv,6.061817714453355e-14,8.667302090206076e-15,True,1e-05,1e-07
+small,sparse,tau_shape_1,200,2 × 100,paired_answers/tau_shape_1.csv,0.0,0.0,True,1e-05,1e-07
+small,sparse,tau_shape_2,120,2 × 60,paired_answers/tau_shape_2.csv,0.0,0.0,True,1e-05,1e-07
+small,sparse,theta_w_a,10,2 × 5,paired_answers/theta_w_a.csv,8.526512829121202e-14,4.613083909873398e-16,True,1e-05,1e-07
+small,sparse,theta_w_b,10,2 × 5,paired_answers/theta_w_b.csv,8.970602038971265e-14,1.7815124821076256e-14,True,1e-05,1e-07
+small,sparse,theta_w_logcomplement,10,2 × 5,paired_answers/theta_w_logcomplement.csv,3.4638958368304884e-14,4.859104964698776e-15,True,1e-05,1e-07
+small,sparse,theta_w_logmean,10,2 × 5,paired_answers/theta_w_logmean.csv,8.881784197001252e-16,2.1082017907190142e-14,True,1e-05,1e-07
+small,sparse,theta_w_mean,10,2 × 5,paired_answers/theta_w_mean.csv,8.881784197001252e-16,4.593546604770145e-16,True,1e-05,1e-07
+small,sparse,w_mean_1,500,100 × 5,paired_answers/w_mean_1.csv,2.55351295663786e-15,1.9630519310540336e-15,True,1e-05,1e-07
+small,sparse,w_mean_2,300,60 × 5,paired_answers/w_mean_2.csv,2.220446049250313e-15,1.812764970955225e-15,True,1e-05,1e-07
+small,sparse,w_second_moment_1,500,100 × 5,paired_answers/w_second_moment_1.csv,3.1086244689504383e-15,2.8244400183537587e-15,True,1e-05,1e-07
+small,sparse,w_second_moment_2,300,60 × 5,paired_answers/w_second_moment_2.csv,4.6629367034256575e-15,2.982987908025403e-15,True,1e-05,1e-07
+small,sparse,w_variance_1,500,100 × 5,paired_answers/w_variance_1.csv,6.067466407772004e-17,3.550862203253759e-13,True,1e-05,1e-07
+small,sparse,w_variance_2,300,60 × 5,paired_answers/w_variance_2.csv,5.146572187517129e-17,3.897888777188874e-13,True,1e-05,1e-07
+small,sparse,z_mean,1000,200 × 5,paired_answers/z_mean.csv,5.861977570020827e-14,2.387185867218576e-15,True,1e-05,1e-07
+small,sparse,z_second_moment,1000,200 × 5,paired_answers/z_second_moment.csv,1.7621459846850485e-12,4.225932891149088e-15,True,1e-05,1e-07
+small,sparse,z_variance,1000,200 × 5,paired_answers/z_variance.csv,1.6342482922482304e-13,4.42633826700654e-15,True,1e-05,1e-07
+medium,dense,elbo,12,12,paired_answers/elbo.csv,1.0244548320770264e-08,2.541015701823736e-15,True,1e-05,1e-07
+medium,dense,elbo_iterations,12,12,paired_answers/elbo_iterations.csv,0.0,0.0,True,1e-05,1e-07
+medium,dense,factor_r2,40,2 × 2 × 10,paired_answers/factor_r2.csv,2.275957200481571e-14,7.673689383171194e-14,True,1e-05,1e-07
+medium,dense,r2,4,2 × 2,paired_answers/r2.csv,1.1102230246251565e-16,9.652223826303911e-17,True,1e-05,1e-07
+medium,dense,reconstruction_1,150000,500 × 300,paired_answers/reconstruction_1.csv,3.907985046680551e-14,1.2533203624864408e-15,True,1e-05,1e-07
+medium,dense,reconstruction_2,100000,500 × 200,paired_answers/reconstruction_2.csv,3.730349362740526e-14,1.2700390126616112e-15,True,1e-05,1e-07
+medium,dense,tau_logmean_1,600,2 × 300,paired_answers/tau_logmean_1.csv,5.3290705182007514e-14,3.0785950597061182e-15,True,1e-05,1e-07
+medium,dense,tau_logmean_2,400,2 × 200,paired_answers/tau_logmean_2.csv,3.5083047578154947e-14,2.7480949795469433e-15,True,1e-05,1e-07
+medium,dense,tau_mean_1,600,2 × 300,paired_answers/tau_mean_1.csv,1.666222715357435e-12,1.017395044903682e-14,True,1e-05,1e-07
+medium,dense,tau_mean_2,400,2 × 200,paired_answers/tau_mean_2.csv,8.384404281969182e-13,8.78315867638535e-15,True,1e-05,1e-07
+medium,dense,tau_rate_1,600,2 × 300,paired_answers/tau_rate_1.csv,2.184918912462308e-13,9.629226546329302e-15,True,1e-05,1e-07
+medium,dense,tau_rate_2,400,2 × 200,paired_answers/tau_rate_2.csv,1.8118839761882555e-13,8.789225666924457e-15,True,1e-05,1e-07
+medium,dense,tau_shape_1,600,2 × 300,paired_answers/tau_shape_1.csv,0.0,0.0,True,1e-05,1e-07
+medium,dense,tau_shape_2,400,2 × 200,paired_answers/tau_shape_2.csv,0.0,0.0,True,1e-05,1e-07
+medium,dense,w_mean_1,3000,300 × 10,paired_answers/w_mean_1.csv,3.552713678800501e-15,2.7003018362077687e-15,True,1e-05,1e-07
+medium,dense,w_mean_2,2000,200 × 10,paired_answers/w_mean_2.csv,3.4416913763379853e-15,2.7107352718262734e-15,True,1e-05,1e-07
+medium,dense,w_second_moment_1,3000,300 × 10,paired_answers/w_second_moment_1.csv,4.3298697960381105e-15,5.008627059894241e-15,True,1e-05,1e-07
+medium,dense,w_second_moment_2,2000,200 × 10,paired_answers/w_second_moment_2.csv,5.329070518200751e-15,5.006148698080669e-15,True,1e-05,1e-07
+medium,dense,w_variance_1,3000,300 × 10,paired_answers/w_variance_1.csv,2.0244087439377778e-19,9.266863620271658e-15,True,1e-05,1e-07
+medium,dense,w_variance_2,2000,200 × 10,paired_answers/w_variance_2.csv,2.371692252312041e-19,1.0269284235467981e-14,True,1e-05,1e-07
+medium,dense,z_mean,5000,500 × 10,paired_answers/z_mean.csv,7.283063041541027e-14,2.7713314278268942e-15,True,1e-05,1e-07
+medium,dense,z_second_moment,5000,500 × 10,paired_answers/z_second_moment.csv,2.2168933355715126e-12,5.094553293060985e-15,True,1e-05,1e-07
+medium,dense,z_variance,5000,500 × 10,paired_answers/z_variance.csv,1.452830911130576e-17,1.5680000239627944e-16,True,1e-05,1e-07
+medium,ard,alpha_w_logmean,20,2 × 10,paired_answers/alpha_w_logmean.csv,1.0658141036401503e-14,1.2936376154190878e-15,True,1e-05,1e-07
+medium,ard,alpha_w_mean,20,2 × 10,paired_answers/alpha_w_mean.csv,8.668621376273222e-13,5.949864393268393e-15,True,1e-05,1e-07
+medium,ard,alpha_w_rate,20,2 × 10,paired_answers/alpha_w_rate.csv,1.9539925233402755e-14,4.8760209319039755e-15,True,1e-05,1e-07
+medium,ard,alpha_w_shape,20,2 × 10,paired_answers/alpha_w_shape.csv,0.0,0.0,True,1e-05,1e-07
+medium,ard,alpha_z_logmean,20,2 × 10,paired_answers/alpha_z_logmean.csv,1.2434497875801753e-14,1.4579204677678218e-15,True,1e-05,1e-07
+medium,ard,alpha_z_mean,20,2 × 10,paired_answers/alpha_z_mean.csv,1.717376241217039e-16,5.2773109509767624e-15,True,1e-05,1e-07
+medium,ard,alpha_z_rate,20,2 × 10,paired_answers/alpha_z_rate.csv,1.3096723705530167e-10,6.905882929480747e-15,True,1e-05,1e-07
+medium,ard,alpha_z_shape,20,2 × 10,paired_answers/alpha_z_shape.csv,0.0,0.0,True,1e-05,1e-07
+medium,ard,elbo,12,12,paired_answers/elbo.csv,1.0244548320770264e-08,2.550229361748027e-15,True,1e-05,1e-07
+medium,ard,elbo_iterations,12,12,paired_answers/elbo_iterations.csv,0.0,0.0,True,1e-05,1e-07
+medium,ard,factor_r2,40,2 × 2 × 10,paired_answers/factor_r2.csv,2.353672812205332e-14,7.760122346131469e-14,True,1e-05,1e-07
+medium,ard,r2,4,2 × 2,paired_answers/r2.csv,1.1102230246251565e-16,5.57270093946509e-17,True,1e-05,1e-07
+medium,ard,reconstruction_1,150000,500 × 300,paired_answers/reconstruction_1.csv,3.6415315207705135e-14,1.1945718212559962e-15,True,1e-05,1e-07
+medium,ard,reconstruction_2,100000,500 × 200,paired_answers/reconstruction_2.csv,3.019806626980426e-14,1.1725681316211987e-15,True,1e-05,1e-07
+medium,ard,tau_logmean_1,600,2 × 300,paired_answers/tau_logmean_1.csv,5.062616992290714e-14,3.0878875893793296e-15,True,1e-05,1e-07
+medium,ard,tau_logmean_2,400,2 × 200,paired_answers/tau_logmean_2.csv,4.263256414560601e-14,3.1123552676534883e-15,True,1e-05,1e-07
+medium,ard,tau_mean_1,600,2 × 300,paired_answers/tau_mean_1.csv,1.588063014423824e-12,1.019688737134471e-14,True,1e-05,1e-07
+medium,ard,tau_mean_2,400,2 × 200,paired_answers/tau_mean_2.csv,1.1013412404281553e-12,1.0176163394581619e-14,True,1e-05,1e-07
+medium,ard,tau_rate_1,600,2 × 300,paired_answers/tau_rate_1.csv,1.9317880628477724e-13,9.604625629151044e-15,True,1e-05,1e-07
+medium,ard,tau_rate_2,400,2 × 200,paired_answers/tau_rate_2.csv,2.1049828546892968e-13,9.711962434491716e-15,True,1e-05,1e-07
+medium,ard,tau_shape_1,600,2 × 300,paired_answers/tau_shape_1.csv,0.0,0.0,True,1e-05,1e-07
+medium,ard,tau_shape_2,400,2 × 200,paired_answers/tau_shape_2.csv,0.0,0.0,True,1e-05,1e-07
+medium,ard,w_mean_1,3000,300 × 10,paired_answers/w_mean_1.csv,1.942890293094024e-15,2.9057833402637015e-15,True,1e-05,1e-07
+medium,ard,w_mean_2,2000,200 × 10,paired_answers/w_mean_2.csv,2.0539125955565396e-15,2.9032962404719147e-15,True,1e-05,1e-07
+medium,ard,w_second_moment_1,3000,300 × 10,paired_answers/w_second_moment_1.csv,1.2490009027033011e-15,5.1585710904382985e-15,True,1e-05,1e-07
+medium,ard,w_second_moment_2,2000,200 × 10,paired_answers/w_second_moment_2.csv,1.609823385706477e-15,5.265366955848476e-15,True,1e-05,1e-07
+medium,ard,w_variance_1,3000,300 × 10,paired_answers/w_variance_1.csv,4.446922973085077e-20,9.586420842296225e-15,True,1e-05,1e-07
+medium,ard,w_variance_2,2000,200 × 10,paired_answers/w_variance_2.csv,5.166900978251232e-20,9.468463730406006e-15,True,1e-05,1e-07
+medium,ard,z_mean,5000,500 × 10,paired_answers/z_mean.csv,1.6342482922482304e-13,3.4041277666732655e-15,True,1e-05,1e-07
+medium,ard,z_second_moment,5000,500 × 10,paired_answers/z_second_moment.csv,1.1141310096718371e-11,6.70674751380571e-15,True,1e-05,1e-07
+medium,ard,z_variance,5000,500 × 10,paired_answers/z_variance.csv,7.958078640513122e-13,5.873704359229342e-15,True,1e-05,1e-07
+medium,sparse,alpha_w_logmean,20,2 × 10,paired_answers/alpha_w_logmean.csv,9.769962616701378e-15,1.1791994608228697e-15,True,1e-05,1e-07
+medium,sparse,alpha_w_mean,20,2 × 10,paired_answers/alpha_w_mean.csv,9.947598300641403e-13,5.723175674706978e-15,True,1e-05,1e-07
+medium,sparse,alpha_w_rate,20,2 × 10,paired_answers/alpha_w_rate.csv,1.2789769243681803e-13,3.2608975635788176e-15,True,1e-05,1e-07
+medium,sparse,alpha_w_shape,20,2 × 10,paired_answers/alpha_w_shape.csv,0.0,0.0,True,1e-05,1e-07
+medium,sparse,alpha_z_logmean,20,2 × 10,paired_answers/alpha_z_logmean.csv,1.0658141036401503e-14,1.1567488292303596e-15,True,1e-05,1e-07
+medium,sparse,alpha_z_mean,20,2 × 10,paired_answers/alpha_z_mean.csv,8.881784197001252e-16,3.0431853099876943e-15,True,1e-05,1e-07
+medium,sparse,alpha_z_rate,20,2 × 10,paired_answers/alpha_z_rate.csv,8.913048077374697e-11,4.833748894753715e-15,True,1e-05,1e-07
+medium,sparse,alpha_z_shape,20,2 × 10,paired_answers/alpha_z_shape.csv,0.0,0.0,True,1e-05,1e-07
+medium,sparse,elbo,12,12,paired_answers/elbo.csv,1.0710209608078003e-08,2.727244152783498e-15,True,1e-05,1e-07
+medium,sparse,elbo_iterations,12,12,paired_answers/elbo_iterations.csv,0.0,0.0,True,1e-05,1e-07
+medium,sparse,factor_r2,40,2 × 2 × 10,paired_answers/factor_r2.csv,1.8540724511240114e-14,6.818526998313127e-14,True,1e-05,1e-07
+medium,sparse,inactive_variance_1,10,10,paired_answers/inactive_variance_1.csv,3.3306690738754696e-16,1.2939299556009816e-15,True,1e-05,1e-07
+medium,sparse,inactive_variance_2,10,10,paired_answers/inactive_variance_2.csv,1.27675647831893e-15,4.4520591259207105e-15,True,1e-05,1e-07
+medium,sparse,inclusion_1,3000,300 × 10,paired_answers/inclusion_1.csv,8.415490526658687e-14,3.773794715913145e-15,True,1e-05,1e-07
+medium,sparse,inclusion_2,2000,200 × 10,paired_answers/inclusion_2.csv,1.1612932837579137e-13,4.754202684493809e-15,True,1e-05,1e-07
+medium,sparse,r2,4,2 × 2,paired_answers/r2.csv,1.1102230246251565e-16,5.572701661912254e-17,True,1e-05,1e-07
+medium,sparse,reconstruction_1,150000,500 × 300,paired_answers/reconstruction_1.csv,4.263256414560601e-14,1.358246336788664e-15,True,1e-05,1e-07
+medium,sparse,reconstruction_2,100000,500 × 200,paired_answers/reconstruction_2.csv,3.730349362740526e-14,1.3793235061055567e-15,True,1e-05,1e-07
+medium,sparse,slab_mean_1,3000,300 × 10,paired_answers/slab_mean_1.csv,3.774758283725532e-15,2.254440809394916e-15,True,1e-05,1e-07
+medium,sparse,slab_mean_2,2000,200 × 10,paired_answers/slab_mean_2.csv,3.4416913763379853e-15,2.3929828282646444e-15,True,1e-05,1e-07
+medium,sparse,slab_variance_1,3000,300 × 10,paired_answers/slab_variance_1.csv,6.369687763352339e-19,8.30450894457523e-15,True,1e-05,1e-07
+medium,sparse,slab_variance_2,2000,200 × 10,paired_answers/slab_variance_2.csv,9.75781955236954e-19,9.163237756432329e-15,True,1e-05,1e-07
+medium,sparse,tau_logmean_1,600,2 × 300,paired_answers/tau_logmean_1.csv,3.730349362740526e-14,2.967453883869104e-15,True,1e-05,1e-07
+medium,sparse,tau_logmean_2,400,2 × 200,paired_answers/tau_logmean_2.csv,4.04121180963557e-14,2.740248570023744e-15,True,1e-05,1e-07
+medium,sparse,tau_mean_1,600,2 × 300,paired_answers/tau_mean_1.csv,9.272582701669307e-13,9.517835206002683e-15,True,1e-05,1e-07
+medium,sparse,tau_mean_2,400,2 × 200,paired_answers/tau_mean_2.csv,9.841016890277388e-13,8.774248643538493e-15,True,1e-05,1e-07
+medium,sparse,tau_rate_1,600,2 × 300,paired_answers/tau_rate_1.csv,1.865174681370263e-13,9.482976170226244e-15,True,1e-05,1e-07
+medium,sparse,tau_rate_2,400,2 × 200,paired_answers/tau_rate_2.csv,2.007283228522283e-13,8.706286882309223e-15,True,1e-05,1e-07
+medium,sparse,tau_shape_1,600,2 × 300,paired_answers/tau_shape_1.csv,0.0,0.0,True,1e-05,1e-07
+medium,sparse,tau_shape_2,400,2 × 200,paired_answers/tau_shape_2.csv,0.0,0.0,True,1e-05,1e-07
+medium,sparse,theta_w_a,20,2 × 10,paired_answers/theta_w_a.csv,2.2737367544323206e-13,4.534058383011905e-16,True,1e-05,1e-07
+medium,sparse,theta_w_b,20,2 × 10,paired_answers/theta_w_b.csv,2.1449508835758024e-13,4.2125295517064675e-14,True,1e-05,1e-07
+medium,sparse,theta_w_logcomplement,20,2 × 10,paired_answers/theta_w_logcomplement.csv,1.6342482922482304e-13,1.533884899055512e-14,True,1e-05,1e-07
+medium,sparse,theta_w_logmean,20,2 × 10,paired_answers/theta_w_logmean.csv,1.7763568394002505e-15,5.114732505540795e-14,True,1e-05,1e-07
+medium,sparse,theta_w_mean,20,2 × 10,paired_answers/theta_w_mean.csv,9.992007221626409e-16,4.76380867166421e-16,True,1e-05,1e-07
+medium,sparse,w_mean_1,3000,300 × 10,paired_answers/w_mean_1.csv,3.774758283725532e-15,2.253837865710291e-15,True,1e-05,1e-07
+medium,sparse,w_mean_2,2000,200 × 10,paired_answers/w_mean_2.csv,3.4416913763379853e-15,2.3985092729496224e-15,True,1e-05,1e-07
+medium,sparse,w_second_moment_1,3000,300 × 10,paired_answers/w_second_moment_1.csv,9.325873406851315e-15,3.2682756772644192e-15,True,1e-05,1e-07
+medium,sparse,w_second_moment_2,2000,200 × 10,paired_answers/w_second_moment_2.csv,7.993605777301127e-15,3.780957255285477e-15,True,1e-05,1e-07
+medium,sparse,w_variance_1,3000,300 × 10,paired_answers/w_variance_1.csv,1.84758214586897e-16,9.966894197364298e-13,True,1e-05,1e-07
+medium,sparse,w_variance_2,2000,200 × 10,paired_answers/w_variance_2.csv,1.4127154307486123e-16,9.36339105363071e-13,True,1e-05,1e-07
+medium,sparse,z_mean,5000,500 × 10,paired_answers/z_mean.csv,1.5987211554602254e-13,2.840479563279941e-15,True,1e-05,1e-07
+medium,sparse,z_second_moment,5000,500 × 10,paired_answers/z_second_moment.csv,8.753886504564434e-12,5.628902679409022e-15,True,1e-05,1e-07
+medium,sparse,z_variance,5000,500 × 10,paired_answers/z_variance.csv,6.536993168992922e-13,4.8051507114579075e-15,True,1e-05,1e-07

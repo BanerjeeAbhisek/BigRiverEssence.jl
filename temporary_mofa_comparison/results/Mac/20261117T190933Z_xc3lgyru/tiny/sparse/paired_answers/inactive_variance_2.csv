@@ -1,0 +1,3 @@
+case,model,quantity,index_1based,julia_value,python_value,difference,within_tolerance
+tiny,sparse,inactive_variance_2,1,0.4627796591975542,0.46277965919755365,5.551115123125783e-16,True
+tiny,sparse,inactive_variance_2,2,0.8032448726536082,0.8032448726536112,-2.9976021664879227e-15,True

@@ -1,0 +1,4 @@
+"view","samples","features","observed_samples","missing_entries"
+"Drugs",200,310,184,4960
+"mRNA",200,500,136,32000
+"Methylation",200,500,196,2000

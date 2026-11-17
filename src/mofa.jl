@@ -12,6 +12,11 @@
 # Only Gaussian observations, dense sample factors, and equal view weights
 # are supported; non-Gaussian likelihoods, SVI, MEFISTO, and factor dropping
 # are not implemented. Public maxiter counts update sweeps, not the initial state.
+# Coordinate equations/order are unchanged. Small ranks use direct SIMD
+# prediction; higher ranks reuse prefix/suffix sums so a coordinate's old
+# contribution never needs to be subtracted from a large residual.
+# Large sweeps distribute independent loading/sample rows across Julia tasks,
+# each with private scratch and unchanged within-row coordinate arithmetic.
 
 """
 	MofaData{T,L}
@@ -216,15 +221,63 @@ Internal reusable scratch buffers, allocated once by `_mofa_initialize`
 - `feature_buffer::Vector{T}`: Scratch of length max(pᵢ), reused across views;
   only the current view's first pᵢ entries are used
 - `factor_buffer::Vector{T}`: Length-k scratch for factor-wise calculations
+- `coordinate_sums::Union{Nothing,Matrix{T}}`: Optional max(n,sum(pᵢ))×(k+1)
+  prefix/suffix cache. Used from rank eight onward; small ranks avoid its
+  storage and preparation overhead and use direct prediction instead
+- `parallel_scratch::Vector{Tuple{Matrix{T},Vector{T}}}`: Independent suffix
+  and coefficient buffers for large sweeps; empty for serial execution. The
+  first pair reuses coordinate_sums and factor_buffer
 
-Scratch is separate from model parameters and starts at zero. Weight updates
-reuse the sample/factor buffers, and factor updates reuse the feature/factor
-buffers, without reserving a full n×pᵢ residual matrix
+Scratch is separate from model parameters and starts at zero. Prefix/suffix
+sums exclude the current coordinate without subtract/add-back cancellation.
+Storage grows with factor/loading counts, not with n×pᵢ residual matrices
 """
 struct MofaWorkspace{T}
 	sample_buffer::Vector{T}
 	feature_buffer::Vector{T}
 	factor_buffer::Vector{T}
+	coordinate_sums::Union{Nothing,Matrix{T}}
+	parallel_scratch::Vector{Tuple{Matrix{T},Vector{T}}}
+end
+
+"""
+	MofaWorkspace(sample_buffer::Vector{T}, feature_buffer::Vector{T},
+		factor_buffer::Vector{T}, coordinate_sums::Union{Nothing,Matrix{T}}) where {T}
+
+Construct explicitly serial MOFA scratch with optional coordinate sums
+# Arguments
+- `sample_buffer::Vector{T}`: Length-n sample scratch, reused without copying
+- `feature_buffer::Vector{T}`: Feature scratch, reused without copying
+- `factor_buffer::Vector{T}`: Length-k coefficient scratch, reused without copying
+- `coordinate_sums::Union{Nothing,Matrix{T}}`: Prefix/suffix scratch or nothing
+# Value
+A `MofaWorkspace` reusing the supplied arrays with no parallel workers.
+`_mofa_initialize` enables independent worker scratch only for large problems
+"""
+function MofaWorkspace(sample_buffer::Vector{T}, feature_buffer::Vector{T},
+	factor_buffer::Vector{T}, coordinate_sums::Union{Nothing,Matrix{T}}) where {T}
+	return MofaWorkspace(sample_buffer, feature_buffer, factor_buffer, coordinate_sums,
+		Tuple{Matrix{T},Vector{T}}[])
+end
+
+"""
+	MofaWorkspace(sample_buffer::Vector{T}, feature_buffer::Vector{T},
+		factor_buffer::Vector{T}) where {T}
+
+Construct reusable MOFA scratch from three independently supplied buffers
+# Arguments
+- `sample_buffer::Vector{T}`: Length-n sample buffer, reused without copying
+- `feature_buffer::Vector{T}`: Feature scratch; its length also reserves suffix rows
+- `factor_buffer::Vector{T}`: Length-k coefficients, reused without copying
+# Value
+A `MofaWorkspace` with an additional max(n,p)×(k+1) allocation at rank ≥ 8.
+`_mofa_initialize` reserves max(n,sum(pᵢ)) rows for complete multiview updates
+"""
+function MofaWorkspace(sample_buffer::Vector{T}, feature_buffer::Vector{T},
+	factor_buffer::Vector{T}) where {T}
+	sums = length(factor_buffer) >= 8 ?
+		zeros(T, max(length(sample_buffer), length(feature_buffer)), length(factor_buffer) + 1) : nothing
+	return MofaWorkspace(sample_buffer, feature_buffer, factor_buffer, sums)
 end
 
 """
@@ -630,7 +683,11 @@ for incorrectly shaped custom means. ARD priors have shape=rate=1e-14 and
 posteriors shape=rate=1. Inclusion hyperparameters start at Beta(1,1), while
 individual loading inclusions start at one, as in the reference builder.
 This internal initializer keeps dense defaults. The public `mofa` function
-supplies its own model defaults and runs training; this initializer does not
+supplies its own model defaults and runs training; this initializer does not.
+For k ≥ 8 and n*sum(pᵢ)*k ≥ 10^7, it reserves private scratch for up to
+min(Threads.nthreads(), n, sum(pᵢ), 8) workers. Single-threaded and smaller fits
+keep serial scratch only. The first worker reuses the serial suffix/coefficient
+buffers; extra workers add O(max(n,sum(pᵢ))*k) storage each
 """
 function _mofa_initialize(data::MofaData{Float64}, k::Int; init::Symbol = :pca,
 	rng::AbstractRNG = Random.GLOBAL_RNG, z_init = nothing, w_init = nothing,
@@ -688,8 +745,122 @@ function _mofa_initialize(data::MofaData{Float64}, k::Int; init::Symbol = :pca,
 		ones(nviews, k), zeros(nviews, k), zeros(nviews, k), zeros(nviews, k), 1.0, 1.0)) : nothing
 	state = MofaState(z, w, tau_shape, tau_rate, tau_mean, 1e-3, 1e-3,
 		tau_logmean, alpha_w, alpha_z, spike_w, theta_w)
-	workspace = MofaWorkspace(zeros(n), zeros(maximum(size(Y, 2) for Y in data.data)), zeros(k))
+	sums = k >= 8 ? zeros(max(n, sum(size(Y, 2) for Y in data.data)), k + 1) : nothing
+	workspace = MofaWorkspace(zeros(n), zeros(maximum(size(Y, 2) for Y in data.data)), zeros(k), sums)
+	# Parallelize only independent samples/features. Each worker owns its scratch;
+	# no BLAS calls or floating-point reductions are shared between workers.
+	total_features = sum(size(Y, 2) for Y in data.data)
+	if sums !== nothing && Threads.nthreads() > 1 && min(n, total_features) > 1 && Float64(n) * total_features * k >= 1e7
+		nworkers = min(Threads.nthreads(), n, total_features, 8)
+		push!(workspace.parallel_scratch, (sums, workspace.factor_buffer))
+		for _ in 2:nworkers
+			push!(workspace.parallel_scratch, (zeros(size(sums)), zeros(k)))
+		end
+	end
 	return state, workspace
+end
+
+"""
+	_mofa_predict!(prediction::AbstractVector{Float64}, basis::Matrix{Float64},
+		coefficients::Vector{Float64})
+
+Multiply a factor basis by coordinate coefficients using reusable output storage
+# Arguments
+- `prediction::AbstractVector{Float64}`: Length-n destination, overwritten
+- `basis::Matrix{Float64}`: The n×k sample-factor or loading-mean matrix
+- `coefficients::Vector{Float64}`: Length-k coefficients; a zero coordinate is
+  excluded from the prediction without subtracting an old contribution
+# Value
+The destination containing basis*coefficients. Uses column-contiguous SIMD
+loops for small ranks, avoiding repeated tiny BLAS calls; larger ranks use
+`mul!`. No temporary arrays are allocated. Inputs must not alias the destination.
+Throws a `DimensionMismatch` when the supplied dimensions do not agree
+"""
+function _mofa_predict!(prediction::AbstractVector{Float64}, basis::Matrix{Float64},
+	coefficients::Vector{Float64})
+	length(prediction) == size(basis, 1) && length(coefficients) == size(basis, 2) ||
+		throw(DimensionMismatch("MOFA prediction dimensions must match"))
+	if size(basis, 2) > 16
+		return mul!(prediction, basis, coefficients)
+	end
+	fill!(prediction, 0.0)
+	@inbounds for component in axes(basis, 2)
+		coefficient = coefficients[component]
+		iszero(coefficient) && continue
+		@simd for i in axes(basis, 1)
+			prediction[i] += basis[i, component] * coefficient
+		end
+	end
+	return prediction
+end
+
+"""
+	_mofa_coordinate_sums!(sums::Matrix{Float64}, basis::Matrix{Float64},
+		coefficients::Vector{Float64}, offset::Int = 0)
+
+Prepare frozen suffixes and an empty updated prefix for one coordinate sweep
+# Arguments
+- `sums::Matrix{Float64}`: Reusable destination with at least offset+n rows
+  and k+1 columns; rows outside the selected block are left unchanged
+- `basis::Matrix{Float64}`: Fixed n×k sample factors or loading means
+- `coefficients::Vector{Float64}`: The original length-k coordinate means
+- `offset::Int`: Nonnegative row offset, used to concatenate multiple views
+# Value
+The destination with column one set to zero and column c+1 containing the
+contribution of original coordinates c+1:k. The last column is zero. Updating
+only the prefix after each new coordinate gives its exclusion prediction as
+prefix+suffix, without ever subtracting that coordinate's old contribution.
+Requires finite validated inputs and no input/output aliasing. Allocates no
+temporary arrays. Throws a `DimensionMismatch` for insufficient scratch or
+inconsistent basis/coefficient dimensions, or `ArgumentError` for negative offset
+"""
+function _mofa_coordinate_sums!(sums::Matrix{Float64}, basis::Matrix{Float64},
+	coefficients::Vector{Float64}, offset::Int = 0)
+	n, k = size(basis)
+	offset >= 0 || throw(ArgumentError("MOFA coordinate offset must be nonnegative"))
+	length(coefficients) == k && size(sums, 1) >= offset + n && size(sums, 2) >= k + 1 ||
+		throw(DimensionMismatch("MOFA coordinate scratch dimensions must match"))
+	@inbounds @simd for i in 1:n
+		sums[offset + i, 1] = 0.0
+		sums[offset + i, k + 1] = 0.0
+	end
+	@inbounds for component in k:-1:2
+		coefficient = coefficients[component]
+		@inbounds @simd for i in 1:n
+			sums[offset + i, component] = sums[offset + i, component + 1] + basis[i, component] * coefficient
+		end
+	end
+	return sums
+end
+
+"""
+	_mofa_check_parallel_scratch(workspace::MofaWorkspace{Float64}, rows::Int, k::Int)
+
+Validate private scratch before any parallel coordinate sweep
+# Arguments
+- `workspace::MofaWorkspace{Float64}`: Reusable serial and worker buffers
+- `rows::Int`: Required prefix/suffix rows across both kinds of update
+- `k::Int`: Number of factors; suffix storage requires at least k+1 columns
+# Value
+Nothing. Empty worker storage selects serial execution. Otherwise each worker
+must have sufficient storage and length-k coefficients, with no aliasing within
+or between workers. Throws a `DimensionMismatch` for insufficient storage or
+an `ArgumentError` for aliased worker arrays. No arrays are modified
+"""
+function _mofa_check_parallel_scratch(workspace::MofaWorkspace{Float64}, rows::Int, k::Int)
+	for worker in eachindex(workspace.parallel_scratch)
+		sums, factors = workspace.parallel_scratch[worker]
+		size(sums, 1) >= rows && size(sums, 2) >= k + 1 && length(factors) == k ||
+			throw(DimensionMismatch("MOFA parallel scratch must fit samples, features, and factors"))
+		Base.mightalias(sums, factors) && throw(ArgumentError("MOFA worker buffers must not alias"))
+		for previous in 1:worker - 1
+			other_sums, other_factors = workspace.parallel_scratch[previous]
+			(Base.mightalias(sums, other_sums) || Base.mightalias(factors, other_factors) ||
+				Base.mightalias(sums, other_factors) || Base.mightalias(factors, other_sums)) &&
+				throw(ArgumentError("MOFA workers require independent scratch"))
+		end
+	end
+	return nothing
 end
 
 """
@@ -706,7 +877,8 @@ Perform one full-batch coordinate sweep over dense or sparse loading distributio
   means, variances, and second moments are overwritten; factors and noise are
   held fixed
 - `workspace::MofaWorkspace{Float64}`: Reusable length-n sample and length-k
-  factor buffers, overwritten during the sweep; the feature buffer is unused
+  factor buffers plus prefix/suffix scratch, overwritten during the sweep;
+  the feature buffer is unused
 # Value
 The supplied state after one loading sweep with zero-mean priors and no
 stochastic damping. Prior precision A is the current ARD expectation when
@@ -720,14 +892,16 @@ are used immediately by later coordinates. Inactive variance is 1/A at this
 update, not retroactively changed by a subsequent ARD update. This function
 does not update ARD or Beta hyperparameters; callers control their order.
 Features are conditionally independent, allowing feature-major traversal for
-Julia's column-major data. Prediction excluding the current coordinate is
-computed directly, not by subtracting and adding back its old contribution.
+Julia's column-major data. Prediction excludes the current coordinate using
+updated prefix and frozen suffix sums, never subtracting its old contribution.
 No n×pᵢ residual or expanded precision matrix is allocated. Throws a
 `DimensionMismatch` for incompatible dimensions or an `ArgumentError` for
 invalid group indices, nonfinite means, nonpositive/nonfinite factor second
 moments or noise precisions, or nonfinite update results. Numeric failure can
 leave earlier loading coordinates updated; no rollback is attempted. This is
-one update, not a complete MOFA fit
+one update, not a complete MOFA fit. When parallel scratch is present, disjoint
+loading rows are updated concurrently; no floating-point reduction crosses
+workers. Numeric exceptions inside tasks are wrapped by Julia's thread scheduler
 """
 function _mofa_update_weights!(data::MofaData{Float64}, state::MofaState{Float64},
 	workspace::MofaWorkspace{Float64})
@@ -737,6 +911,9 @@ function _mofa_update_weights!(data::MofaData{Float64}, state::MofaState{Float64
 		throw(DimensionMismatch("MOFA factor parameter and moment shapes must match"))
 	length(workspace.sample_buffer) == n && length(workspace.factor_buffer) == k ||
 		throw(DimensionMismatch("MOFA weight workspace requires length-n and length-k buffers"))
+	workspace.coordinate_sums === nothing ||
+		(size(workspace.coordinate_sums, 1) >= n && size(workspace.coordinate_sums, 2) >= k + 1) ||
+		throw(DimensionMismatch("MOFA weight coordinate scratch must fit samples and factors"))
 	nviews, ngroups = length(data.data), length(data.group_labels)
 	nviews >= 1 && ngroups >= 1 || throw(ArgumentError("MOFA requires views and groups"))
 	_mofa_check_gamma(state.alpha_w, (nviews, k))
@@ -767,11 +944,12 @@ function _mofa_update_weights!(data::MofaData{Float64}, state::MofaState{Float64
 			throw(ArgumentError("MOFA loading means must be finite and noise precisions finite and positive"))
 		state.spike_w === nothing || _mofa_check_spike(state.spike_w[m], (p, k))
 	end
-	prediction, factors = workspace.sample_buffer, workspace.factor_buffer
-	for m in 1:nviews
-		Y, mask, W, tau = data.data[m], data.missing_mask[m], state.w[m], state.tau_mean[m]
-		sparse = state.spike_w === nothing ? nothing : state.spike_w[m]
-		if sparse !== nothing
+	total_features = sum(size(Y, 2) for Y in data.data)
+	_mofa_check_parallel_scratch(workspace, max(n, total_features), k)
+	# Shared per-view sparse priors are initialized once, outside worker tasks.
+	if state.spike_w !== nothing
+		@inbounds for m in 1:nviews
+			sparse = state.spike_w[m]
 			for component in 1:k
 				A = state.alpha_w === nothing ? 1.0 : state.alpha_w.mean[m, component]
 				inactive = inv(A)
@@ -779,22 +957,77 @@ function _mofa_update_weights!(data::MofaData{Float64}, state::MofaState{Float64
 				sparse.inactive_variance[component] = inactive
 			end
 		end
-		for j in axes(Y, 2)
+	end
+	if isempty(workspace.parallel_scratch)
+		_mofa_weight_sweep!(data, state, workspace.sample_buffer, workspace.factor_buffer,
+			workspace.coordinate_sums, 1:total_features)
+	else
+		nworkers = length(workspace.parallel_scratch)
+		Threads.@threads for worker in 1:nworkers
+			sums, factors = workspace.parallel_scratch[worker]
+			features = (div((worker - 1) * total_features, nworkers) + 1):div(worker * total_features, nworkers)
+			_mofa_weight_sweep!(data, state, workspace.sample_buffer, factors, sums, features)
+		end
+	end
+	return state
+end
+
+"""
+	_mofa_weight_sweep!(data, state, prediction, factors, sums, features)
+
+Update a disjoint range of loading rows after `_mofa_update_weights!` validation
+# Arguments
+- `data::MofaData{Float64}`: Validated views, masks, and group indices
+- `state::MofaState{Float64}`: State whose loading rows in features are overwritten
+- `prediction::Vector{Float64}`: Length-n scratch, written only when sums is nothing
+- `factors::Vector{Float64}`: Private length-k coefficient scratch
+- `sums::Union{Nothing,Matrix{Float64}}`: Private validated prefix/suffix scratch
+- `features::UnitRange{Int}`: Loading-row indices across concatenated views
+# Value
+The updated state. Callers validate dimensions and moments and initialize sparse
+inactive variances before calling. Concurrent calls must use disjoint feature
+ranges and independent coefficient/suffix buffers. All coordinate operations
+within one loading row retain their serial order; no cross-worker reduction is
+used. Cached calls do not read or write prediction
+"""
+function _mofa_weight_sweep!(data::MofaData{Float64}, state::MofaState{Float64},
+	prediction::Vector{Float64}, factors::Vector{Float64}, sums,
+	features::UnitRange{Int})
+	n, k = size(state.z.mean)
+	offset = 0
+	@inbounds for m in eachindex(data.data)
+		Y, mask, W, tau = data.data[m], data.missing_mask[m], state.w[m], state.tau_mean[m]
+		sparse = state.spike_w === nothing ? nothing : state.spike_w[m]
+		p = size(Y, 2)
+		for j in max(1, first(features) - offset):min(p, last(features) - offset)
 			for component in 1:k
 				factors[component] = W.mean[j, component]
 			end
+			sums === nothing || _mofa_coordinate_sums!(sums, state.z.mean, factors)
 			for component in 1:k
-				# Explicitly exclude this coordinate. A residual maintained by
-				# subtract/add-back can lose small signals when old weights are huge.
-				factors[component] = 0.0
-				mul!(prediction, state.z.mean, factors)
+				if sums === nothing
+					factors[component] = 0.0
+					_mofa_predict!(prediction, state.z.mean, factors)
+				end
 				A = state.alpha_w === nothing ? 1.0 : state.alpha_w.mean[m, component]
 				precision, numerator = A, 0.0
-				for i in 1:n
-					mask[i, j] && continue
-					noise = tau[data.group_indices[i], j]
-					precision += noise * state.z.second_moment[i, component]
-					numerator += noise * state.z.mean[i, component] * (Y[i, j] - prediction[i])
+				if sums === nothing
+					@inbounds @simd for i in 1:n
+						if !mask[i, j]
+							noise = tau[data.group_indices[i], j]
+							precision += noise * state.z.second_moment[i, component]
+							numerator += noise * state.z.mean[i, component] * (Y[i, j] - prediction[i])
+						end
+					end
+				else
+					@inbounds @simd for i in 1:n
+						if !mask[i, j]
+							noise = tau[data.group_indices[i], j]
+							precision += noise * state.z.second_moment[i, component]
+							other = sums[i, 1] + sums[i, component + 1]
+							numerator += noise * state.z.mean[i, component] * (Y[i, j] - other)
+						end
+					end
 				end
 				isfinite(precision) && isfinite(numerator) ||
 					throw(ArgumentError("MOFA weight update produced nonfinite sufficient statistics"))
@@ -818,9 +1051,17 @@ function _mofa_update_weights!(data::MofaData{Float64}, state::MofaState{Float64
 					W.variance[j, component] = g * variance + g * (1 - g) * mu * mu
 					W.second_moment[j, component] = g * second
 				end
-				factors[component] = W.mean[j, component]
+				updated = W.mean[j, component]
+				if sums === nothing
+					factors[component] = updated
+				else
+					@inbounds @simd for i in 1:n
+						sums[i, 1] += state.z.mean[i, component] * updated
+					end
+				end
 			end
 		end
+		offset += p
 	end
 	return state
 end
@@ -839,8 +1080,8 @@ Perform one full-batch coordinate sweep over dense Gaussian sample-factor distri
   Factor means, variances, and second moments are overwritten; weights and
   noise are held fixed
 - `workspace::MofaWorkspace{Float64}`: Reusable feature buffer of length at least
-  max(pᵢ) and length-k factor buffer, overwritten during the sweep. Only the
-  current view's first pᵢ feature entries are used; the sample buffer is unused
+  max(pᵢ), length-k coefficients, and prefix/suffix scratch with sum(pᵢ) rows.
+  The scratch and coefficients are overwritten; the sample buffer is unused
 # Value
 The supplied state after one dense-factor sweep with zero-mean priors, equal
 view weights, and no stochastic damping. Prior precision A is the current
@@ -853,14 +1094,16 @@ Factor spike-and-slab is not implemented; ARD itself is not updated here.
 Samples are conditionally independent, so sample-major traversal preserves the
 reference's coordinate updates. A sample missing every view returns to the
 group's prior, with zero mean and variance 1/A. Prediction excluding the
-current coordinate is computed directly, without
+current coordinate combines updated prefix and frozen suffix sums, without
 subtract/add-back cancellation or an n×pᵢ residual/precision allocation. Throws a
 `DimensionMismatch` for incompatible dimensions or an `ArgumentError` for invalid
 group indices, nonfinite means, invalid loading second moments (zero is allowed
 for sparse weights), or nonpositive/nonfinite
 noise precisions, or nonfinite update results. Numeric failure can leave earlier
 factor coordinates updated; no rollback is attempted. This is one update, not a
-complete MOFA fit
+complete MOFA fit. When parallel scratch is present, disjoint sample rows are
+updated concurrently with unchanged per-row arithmetic. Numeric exceptions
+inside tasks are wrapped by Julia's thread scheduler
 """
 function _mofa_update_factors!(data::MofaData{Float64}, state::MofaState{Float64},
 	workspace::MofaWorkspace{Float64})
@@ -893,27 +1136,87 @@ function _mofa_update_factors!(data::MofaData{Float64}, state::MofaState{Float64
 			all(x -> isfinite(x) && x > 0, tau) ||
 			throw(ArgumentError("MOFA loading means must be finite and second moments/noise precisions finite and positive"))
 	end
-	factors = workspace.factor_buffer
-	for i in 1:n
+	sums = workspace.coordinate_sums
+	sums === nothing ||
+		(size(sums, 1) >= sum(size(Y, 2) for Y in data.data) && size(sums, 2) >= k + 1) ||
+		throw(DimensionMismatch("MOFA factor coordinate scratch must fit all views and factors"))
+	_mofa_check_parallel_scratch(workspace, max(n, sum(size(Y, 2) for Y in data.data)), k)
+	if isempty(workspace.parallel_scratch)
+		_mofa_factor_sweep!(data, state, workspace.feature_buffer, workspace.factor_buffer, sums, 1:n)
+	else
+		nworkers = length(workspace.parallel_scratch)
+		Threads.@threads for worker in 1:nworkers
+			worker_sums, factors = workspace.parallel_scratch[worker]
+			samples = (div((worker - 1) * n, nworkers) + 1):div(worker * n, nworkers)
+			_mofa_factor_sweep!(data, state, workspace.feature_buffer, factors, worker_sums, samples)
+		end
+	end
+	return state
+end
+
+"""
+	_mofa_factor_sweep!(data, state, feature_buffer, factors, sums, samples)
+
+Update a disjoint range of factor rows after `_mofa_update_factors!` validation
+# Arguments
+- `data::MofaData{Float64}`: Validated aligned views, masks, and group indices
+- `state::MofaState{Float64}`: State whose sample rows in samples are overwritten
+- `feature_buffer::Vector{Float64}`: Prediction scratch, written only without sums
+- `factors::Vector{Float64}`: Private length-k coefficient scratch
+- `sums::Union{Nothing,Matrix{Float64}}`: Private validated prefix/suffix scratch
+- `samples::UnitRange{Int}`: Disjoint sample rows assigned to this sweep
+# Value
+The updated state. Dimensions/moments must already be validated. Concurrent calls
+must use disjoint sample ranges and independent coefficient/suffix buffers.
+The coordinate order and per-sample reductions are unchanged. Cached calls do
+not read or write feature_buffer; weights and noise are read only
+"""
+function _mofa_factor_sweep!(data::MofaData{Float64}, state::MofaState{Float64},
+	feature_buffer::Vector{Float64}, factors::Vector{Float64}, sums,
+	samples::UnitRange{Int})
+	n, k = size(state.z.mean)
+	nviews = length(data.data)
+	@inbounds for i in samples
 		group = data.group_indices[i]
 		for component in 1:k
 			factors[component] = state.z.mean[i, component]
 		end
+		if sums !== nothing
+			offset = 0
+			for m in 1:nviews
+				_mofa_coordinate_sums!(sums, state.w[m].mean, factors, offset)
+				offset += size(state.w[m].mean, 1)
+			end
+		end
 		for component in 1:k
-			factors[component] = 0.0
+			sums === nothing && (factors[component] = 0.0)
 			A = state.alpha_z === nothing ? 1.0 : state.alpha_z.mean[group, component]
 			precision, numerator = A, 0.0
+			offset = 0
 			for m in 1:nviews
 				Y, mask, W, tau = data.data[m], data.missing_mask[m], state.w[m], state.tau_mean[m]
 				p = size(Y, 2)
-				prediction = @view workspace.feature_buffer[1:p]
-				mul!(prediction, W.mean, factors)
-				for j in 1:p
-					mask[i, j] && continue
-					noise = tau[group, j]
-					precision += noise * W.second_moment[j, component]
-					numerator += noise * W.mean[j, component] * (Y[i, j] - prediction[j])
+				prediction = @view feature_buffer[1:p]
+				if sums === nothing
+					_mofa_predict!(prediction, W.mean, factors)
+					@inbounds @simd for j in 1:p
+						if !mask[i, j]
+							noise = tau[group, j]
+							precision += noise * W.second_moment[j, component]
+							numerator += noise * W.mean[j, component] * (Y[i, j] - prediction[j])
+						end
+					end
+				else
+					@inbounds @simd for j in 1:p
+						if !mask[i, j]
+							noise = tau[group, j]
+							precision += noise * W.second_moment[j, component]
+							other = sums[offset + j, 1] + sums[offset + j, component + 1]
+							numerator += noise * W.mean[j, component] * (Y[i, j] - other)
+						end
+					end
 				end
+				offset += p
 			end
 			isfinite(precision) && isfinite(numerator) ||
 				throw(ArgumentError("MOFA factor update produced nonfinite sufficient statistics"))
@@ -925,7 +1228,18 @@ function _mofa_update_factors!(data::MofaData{Float64}, state::MofaState{Float64
 			state.z.mean[i, component] = mu
 			state.z.variance[i, component] = variance
 			state.z.second_moment[i, component] = second
-			factors[component] = mu
+			if sums === nothing
+				factors[component] = mu
+			else
+				offset = 0
+				for m in 1:nviews
+					W = state.w[m]
+					@inbounds @simd for j in axes(W.mean, 1)
+						sums[offset + j, 1] += W.mean[j, component] * mu
+					end
+					offset += size(W.mean, 1)
+				end
+			end
 		end
 	end
 	return state
@@ -1004,7 +1318,7 @@ function _mofa_update_noise!(data::MofaData{Float64}, state::MofaState{Float64},
 		size(state.tau_shape[m]) == size(state.tau_rate[m]) == size(state.tau_mean[m]) == size(state.tau_logmean[m]) == (G, p) ||
 			throw(DimensionMismatch("noise posterior dimensions must match groups and features"))
 	end
-	for m in 1:M
+	@inbounds for m in 1:M
 		Y, mask, W = data.data[m], data.missing_mask[m], state.w[m]
 		fill!(state.tau_shape[m], state.tau_prior_shape)
 		fill!(state.tau_rate[m], state.tau_prior_rate)
@@ -1012,7 +1326,7 @@ function _mofa_update_noise!(data::MofaData{Float64}, state::MofaState{Float64},
 			for component in 1:k
 				workspace.factor_buffer[component] = W.mean[j, component]
 			end
-			mul!(workspace.sample_buffer, state.z.mean, workspace.factor_buffer)
+			_mofa_predict!(workspace.sample_buffer, state.z.mean, workspace.factor_buffer)
 			for i in 1:n
 				mask[i, j] && continue
 				residual = Y[i, j] - workspace.sample_buffer[i]
@@ -1429,7 +1743,7 @@ function _mofa_elbo(data::MofaData{Float64}, state::MofaState{Float64},
 				for component in 1:k
 					workspace.factor_buffer[component] = W.mean[j, component]
 				end
-				mul!(workspace.sample_buffer, state.z.mean, workspace.factor_buffer)
+				_mofa_predict!(workspace.sample_buffer, state.z.mean, workspace.factor_buffer)
 				for i in 1:n
 					mask[i, j] && continue
 					error = (Y[i, j] - workspace.sample_buffer[i])^2
@@ -1542,7 +1856,7 @@ function _mofa_variance_explained(data::MofaData{Float64}, state::MofaState{Floa
 		for component in 1:k
 			workspace.factor_buffer[component] = state.w[m].mean[j, component]
 		end
-		mul!(workspace.sample_buffer, state.z.mean, workspace.factor_buffer)
+		_mofa_predict!(workspace.sample_buffer, state.z.mean, workspace.factor_buffer)
 		for i in 1:n
 			data.missing_mask[m][i, j] && continue
 			g, y = data.group_indices[i], data.data[m][i, j]

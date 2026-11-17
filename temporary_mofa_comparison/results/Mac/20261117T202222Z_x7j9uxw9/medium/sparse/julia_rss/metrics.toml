@@ -1,0 +1,10 @@
+julia_threads = 4
+blas = "LBTConfig([ILP64] libopenblas64_.dylib)"
+benchmarktools_version = "1.8.0"
+final_elbo = -12088.113965444549
+sweeps = 50
+language = "Julia"
+package_version = "0.2.0"
+version = "1.12.6"
+blas_threads = 4
+package_path = "/Users/abhisekbanerjee/Desktop/UTHSC internship/Julia/BigRiverEssence.jl"

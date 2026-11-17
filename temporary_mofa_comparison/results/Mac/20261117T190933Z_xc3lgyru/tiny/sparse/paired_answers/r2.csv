@@ -1,0 +1,5 @@
+case,model,quantity,index_1based,julia_value,python_value,difference,within_tolerance
+tiny,sparse,r2,"1,1",0.981251017760361,0.981251017760361,0.0,True
+tiny,sparse,r2,"2,1",0.9763423486429702,0.9763423486429701,1.1102230246251565e-16,True
+tiny,sparse,r2,"1,2",0.9893492119589571,0.9893492119589571,0.0,True
+tiny,sparse,r2,"2,2",0.9884369249019974,0.9884369249019974,0.0,True

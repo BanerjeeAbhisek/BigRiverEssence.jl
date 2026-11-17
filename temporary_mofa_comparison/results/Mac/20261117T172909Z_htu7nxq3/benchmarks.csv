@@ -1,0 +1,7 @@
+case,model,language,n,features,factors,groups,sweeps,threads,os,processor,physical_cores,logical_cores,ram_gb,samples,time_min_s,time_median_s,baseline_rss_kb,peak_rss_kb,incremental_peak_rss_kb,rss_samples,rss_interval_ms,julia_allocations,julia_allocated_kb,python_traced_retained_blocks,python_traced_retained_kb,python_traced_peak_kb,final_elbo
+tiny,dense,Julia,60,12+8,2,2,10,1,Mac,Apple M1,8,8,17.179869184,3,0.000428417,0.000433917,488095.744,488095.744,0.0,4,1.0,116,23.12,,,,-641.8844445401181
+tiny,dense,Python,60,12+8,2,2,10,1,Mac,Apple M1,8,8,17.179869184,3,0.00396375,0.004055583,167608.32,167608.32,0.0,7,1.0,,,432,50.908,81.839,-641.8844445401177
+tiny,ard,Julia,60,12+8,2,2,10,1,Mac,Apple M1,8,8,17.179869184,3,0.000449542,0.000461542,492568.576,492568.576,0.0,4,1.0,134,24.144,,,,-862.9899892906683
+tiny,ard,Python,60,12+8,2,2,10,1,Mac,Apple M1,8,8,17.179869184,3,0.004840209,0.005337833,166871.04,166871.04,0.0,7,1.0,,,610,65.308,96.111,-862.9899892906683
+tiny,sparse,Julia,60,12+8,2,2,10,1,Mac,Apple M1,8,8,17.179869184,3,0.000482667,0.000485375,403062.784,403685.376,622.592,3,1.0,163,26.496,,,,-867.9764663236385
+tiny,sparse,Python,60,12+8,2,2,10,1,Mac,Apple M1,8,8,17.179869184,3,0.005521417,0.005671125,167837.696,167854.08,16.384,7,1.0,,,878,86.801,118.58,-867.9764663236383

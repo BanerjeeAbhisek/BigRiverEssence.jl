@@ -1,0 +1,2 @@
+case,model,arrays_compared,all_arrays_within_tolerance,python_time_over_julia,julia_time_min_s,python_time_min_s,julia_memory_kb,python_memory_kb,julia_allocations,python_allocations,julia_final_elbo,python_final_elbo
+small,sparse,44,True,1.5627387962915242,0.0195845,0.03060545795597136,0.0,1376.0,181,44139,-4887.583905795361,-4887.583905795331

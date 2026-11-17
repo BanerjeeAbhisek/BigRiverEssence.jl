@@ -1,5 +1,5 @@
-# Tests for MOFA preprocessing, initialization, moments, and Gaussian updates.
-# Individual weight/factor sweeps are tested; there is no complete fitting loop.
+# Tests for MOFA preprocessing, initialization, Gaussian/sparse updates,
+# complete fitting, diagnostics, and Python reference agreement.
 # Tolerances (tol_ord / tol_julia / tol_r) come from runtests.jl.
 
 @testset "sample groups preserve row order" begin
@@ -112,6 +112,7 @@ end
 	@test workspace.sample_buffer == zeros(6)
 	@test workspace.feature_buffer == zeros(2)
 	@test workspace.factor_buffer == zeros(2)
+	@test workspace.coordinate_sums === nothing
 	# Noise state is G×p per view, not an expanded n×p precision matrix.
 	@test size(s.tau_mean[1]) == (2, 2)
 	# Every independently updated quantity has its own storage.
@@ -253,6 +254,209 @@ end
 	@test_throws ArgumentError BigRiverEssence._mofa_initialize(one, 1; init = :random)
 	extreme = BigRiverEssence._mofa_preprocess([reshape([floatmax(Float64), -floatmax(Float64)], 2, 1)]; center_groups = false)
 	@test_throws ArgumentError BigRiverEssence._mofa_pca_factors(extreme, 1)
+end
+
+@testset "prediction kernel: small-rank SIMD and larger-rank BLAS" begin
+	Random.seed!(73)
+	for n in (1, 7, 60), k in (1, 2, 16, 17, 25)
+		basis, coefficients = randn(n, k), randn(k)
+		k > 1 && (coefficients[2] = 0.0)
+		before_basis, before_coefficients = copy(basis), copy(coefficients)
+		expected = basis * coefficients
+		storage = fill(NaN, n + 2)
+		prediction = @view storage[2:n + 1]
+		@test BigRiverEssence._mofa_predict!(prediction, basis, coefficients) === prediction
+		@test prediction ≈ expected atol = tol_ord rtol = tol_ord
+		@test isnan(storage[1]) && isnan(storage[end])
+		@test basis == before_basis && coefficients == before_coefficients
+		fill!(coefficients, 0.0)
+		@test BigRiverEssence._mofa_predict!(prediction, basis, coefficients) == zeros(n)
+	end
+	# Exclusion must preserve small signals without subtract/add-back cancellation.
+	basis, coefficients = [1e20 1.0; -1e20 2.0], [0.0, 1.0]
+	@test BigRiverEssence._mofa_predict!(zeros(2), basis, coefficients) == [1.0, 2.0]
+	@test BigRiverEssence._mofa_predict!(ones(3), zeros(3, 0), Float64[]) == zeros(3)
+	@test BigRiverEssence._mofa_predict!(Float64[], zeros(0, 2), ones(2)) == Float64[]
+	prediction = fill(123.0, 3)
+	@test_throws DimensionMismatch BigRiverEssence._mofa_predict!(prediction, ones(2, 2), ones(2))
+	@test prediction == fill(123.0, 3)
+	@test_throws DimensionMismatch BigRiverEssence._mofa_predict!(prediction, ones(3, 2), ones(1))
+	@test prediction == fill(123.0, 3)
+end
+
+@testset "coordinate suffix sums and offset storage" begin
+	Random.seed!(74)
+	for n in (1, 5), k in (1, 3, 8, 17)
+		basis, coefficients = randn(n, k), randn(k)
+		before_basis, before_coefficients = copy(basis), copy(coefficients)
+		sums = fill(123.0, n + 4, k + 1)
+		@test BigRiverEssence._mofa_coordinate_sums!(sums, basis, coefficients, 2) === sums
+		@test sums[3:n + 2, 1] == zeros(n)
+		@test sums[3:n + 2, end] == zeros(n)
+		for component in 1:k - 1
+			expected = basis[:, component + 1:end] * coefficients[component + 1:end]
+			@test sums[3:n + 2, component + 1] ≈ expected atol = tol_ord rtol = tol_ord
+		end
+		@test sums[1:2, :] == fill(123.0, 2, k + 1)
+		@test sums[n + 3:end, :] == fill(123.0, 2, k + 1)
+		@test basis == before_basis && coefficients == before_coefficients
+	end
+	# A huge original first coordinate must never enter its exclusion prediction.
+	sums = zeros(2, 4)
+	BigRiverEssence._mofa_coordinate_sums!(sums, ones(2, 3), [1e20, 1.0, 2.0])
+	@test sums[:, 2] == [3.0, 3.0]
+	@test_throws ArgumentError BigRiverEssence._mofa_coordinate_sums!(zeros(2, 3), ones(2, 2), ones(2), -1)
+	@test_throws DimensionMismatch BigRiverEssence._mofa_coordinate_sums!(zeros(1, 3), ones(2, 2), ones(2))
+	@test_throws DimensionMismatch BigRiverEssence._mofa_coordinate_sums!(zeros(2, 2), ones(2, 2), ones(2))
+	@test_throws DimensionMismatch BigRiverEssence._mofa_coordinate_sums!(zeros(2, 3), ones(2, 2), ones(1))
+end
+
+@testset "cached and direct sweeps agree across all ARD/sparsity combinations" begin
+	Random.seed!(75)
+	views = [randn(9, 6), randn(9, 5)]
+	views[1][2, 3] = NaN
+	views[2][4, :] .= NaN
+	for k in (8, 17), aw in (false, true), az in (false, true), sw in (false, true)
+		data = BigRiverEssence._mofa_preprocess(views; groups = [:a, :b, :a, :b, :a, :b, :a, :b, :a])
+		cached, scratch = BigRiverEssence._mofa_initialize(data, k; init = :custom,
+			z_init = randn(9, k), w_init = [randn(6, k), randn(5, k)],
+			ard_weights = aw, ard_factors = az, spikeslab_weights = sw)
+		direct = deepcopy(cached)
+		uncached = BigRiverEssence.MofaWorkspace(copy(scratch.sample_buffer),
+			copy(scratch.feature_buffer), copy(scratch.factor_buffer), nothing)
+		@test size(scratch.coordinate_sums) == (11, k + 1)
+		@test scratch.coordinate_sums == zeros(11, k + 1)
+		for sweep in 1:3
+			for (state, workspace) in ((cached, scratch), (direct, uncached))
+				BigRiverEssence._mofa_update_weights!(data, state, workspace)
+				BigRiverEssence._mofa_update_ard!(data, state; weights = true, factors = false)
+				BigRiverEssence._mofa_update_inclusions!(state)
+				BigRiverEssence._mofa_update_factors!(data, state, workspace)
+				BigRiverEssence._mofa_update_ard!(data, state; weights = false, factors = true)
+				BigRiverEssence._mofa_update_noise!(data, state, workspace)
+			end
+			for field in (:mean, :variance, :second_moment)
+				@test getfield(cached.z, field) ≈ getfield(direct.z, field) atol = tol_ord rtol = tol_ord
+				for m in 1:2
+					@test getfield(cached.w[m], field) ≈ getfield(direct.w[m], field) atol = tol_ord rtol = tol_ord
+				end
+			end
+			for m in 1:2
+				@test cached.tau_mean[m] ≈ direct.tau_mean[m] atol = tol_ord rtol = tol_ord
+			end
+			@test BigRiverEssence._mofa_elbo(data, cached, scratch).total ≈
+				BigRiverEssence._mofa_elbo(data, direct, uncached).total atol = tol_ord rtol = tol_ord
+		end
+		bad = BigRiverEssence.MofaWorkspace(copy(scratch.sample_buffer),
+			copy(scratch.feature_buffer), copy(scratch.factor_buffer), zeros(8, k))
+		@test_throws DimensionMismatch BigRiverEssence._mofa_update_weights!(data, cached, bad)
+		@test_throws DimensionMismatch BigRiverEssence._mofa_update_factors!(data, cached, bad)
+	end
+	workspace = BigRiverEssence.MofaWorkspace(zeros(9), zeros(11), zeros(8))
+	@test size(workspace.coordinate_sums) == (11, 9)
+end
+
+@testset "parallel loading/factor sweeps preserve serial results" begin
+	Random.seed!(76)
+	views = [randn(11, 5), randn(11, 7), randn(11, 3)]
+	views[1][2, 3] = NaN
+	views[2][4, :] .= NaN
+	for X in views
+		X[6, :] .= NaN
+	end
+	groups = repeat([:a, :b], 6)[1:11]
+	for aw in (false, true), az in (false, true), sw in (false, true)
+		data = BigRiverEssence._mofa_preprocess(views; groups)
+		serial, scratch = BigRiverEssence._mofa_initialize(data, 8; init = :custom,
+			z_init = randn(11, 8), w_init = [randn(size(X, 2), 8) for X in views],
+			ard_weights = aw, ard_factors = az, spikeslab_weights = sw)
+		parallel, workers = deepcopy(serial), deepcopy(scratch)
+		@test isempty(scratch.parallel_scratch)
+		push!(workers.parallel_scratch, (workers.coordinate_sums, workers.factor_buffer))
+		for _ in 2:4
+			push!(workers.parallel_scratch, (similar(workers.coordinate_sums), zeros(8)))
+		end
+		@test BigRiverEssence._mofa_check_parallel_scratch(workers, 15, 8) === nothing
+		for sweep in 1:3
+			for (state, workspace) in ((serial, scratch), (parallel, workers))
+				workspace.feature_buffer .= 123.0
+				@test BigRiverEssence._mofa_update_weights!(data, state, workspace) === state
+				@test workspace.feature_buffer == fill(123.0, 7)
+				BigRiverEssence._mofa_update_ard!(data, state; weights = true, factors = false)
+				BigRiverEssence._mofa_update_inclusions!(state)
+				workspace.sample_buffer .= 123.0
+				@test BigRiverEssence._mofa_update_factors!(data, state, workspace) === state
+				@test workspace.sample_buffer == fill(123.0, 11)
+				BigRiverEssence._mofa_update_ard!(data, state; weights = false, factors = true)
+				BigRiverEssence._mofa_update_noise!(data, state, workspace)
+			end
+			# Worker partitioning does not change any within-row reduction order.
+			for field in (:mean, :variance, :second_moment)
+				@test getfield(serial.z, field) == getfield(parallel.z, field)
+				for m in eachindex(views)
+					@test getfield(serial.w[m], field) == getfield(parallel.w[m], field)
+				end
+			end
+			for field in (:tau_shape, :tau_rate, :tau_mean, :tau_logmean)
+				@test getfield(serial, field) == getfield(parallel, field)
+			end
+			for field in (:alpha_w, :alpha_z, :theta_w, :spike_w)
+				a, b = getfield(serial, field), getfield(parallel, field)
+				if a !== nothing
+					for (left, right) in (a isa AbstractVector ? zip(a, b) : ((a, b),))
+						for parameter in fieldnames(typeof(left))
+							@test getfield(left, parameter) == getfield(right, parameter)
+						end
+					end
+				end
+			end
+			@test BigRiverEssence._mofa_elbo(data, serial, scratch) ==
+				BigRiverEssence._mofa_elbo(data, parallel, workers)
+		end
+		before = deepcopy(serial)
+		@test BigRiverEssence._mofa_weight_sweep!(data, serial, scratch.sample_buffer,
+			scratch.factor_buffer, scratch.coordinate_sums, 1:0) === serial
+		@test BigRiverEssence._mofa_factor_sweep!(data, serial, scratch.feature_buffer,
+			scratch.factor_buffer, scratch.coordinate_sums, 1:0) === serial
+		@test serial.z.mean == before.z.mean
+		@test all(serial.w[m].mean == before.w[m].mean for m in eachindex(views))
+	end
+end
+
+@testset "parallel scratch ownership, validation, and automatic threshold" begin
+	Random.seed!(77)
+	data = BigRiverEssence._mofa_preprocess([randn(9, 6), randn(9, 5)])
+	state, workspace = BigRiverEssence._mofa_initialize(data, 8; init = :custom, z_init = randn(9, 8))
+	@test BigRiverEssence._mofa_check_parallel_scratch(workspace, 11, 8) === nothing
+	for bad_pair in ((zeros(10, 9), zeros(8)), (zeros(11, 8), zeros(8)), (zeros(11, 9), zeros(7)))
+		bad = deepcopy(workspace)
+		push!(bad.parallel_scratch, bad_pair)
+		@test_throws DimensionMismatch BigRiverEssence._mofa_check_parallel_scratch(bad, 11, 8)
+		before = deepcopy(state)
+		@test_throws DimensionMismatch BigRiverEssence._mofa_update_weights!(data, state, bad)
+		@test_throws DimensionMismatch BigRiverEssence._mofa_update_factors!(data, state, bad)
+		@test state.z.mean == before.z.mean && all(state.w[m].mean == before.w[m].mean for m in 1:2)
+	end
+	for shared in (:sums, :factors)
+		bad = deepcopy(workspace)
+		storage = zeros(99)
+		pair = (reshape(storage, 11, 9), zeros(8))
+		push!(bad.parallel_scratch, pair)
+		if shared === :sums
+			push!(bad.parallel_scratch, (pair[1], zeros(8)))
+		else
+			push!(bad.parallel_scratch, (zeros(11, 9), pair[2]))
+		end
+		@test_throws ArgumentError BigRiverEssence._mofa_check_parallel_scratch(bad, 11, 8)
+	end
+	large_data = BigRiverEssence._mofa_preprocess([randn(500, 250), randn(500, 250)])
+	_, large_scratch = BigRiverEssence._mofa_initialize(large_data, 40; init = :custom, z_init = randn(500, 40))
+	@test length(large_scratch.parallel_scratch) == (Threads.nthreads() > 1 ? min(Threads.nthreads(), 8) : 0)
+	if !isempty(large_scratch.parallel_scratch)
+		@test first(large_scratch.parallel_scratch)[1] === large_scratch.coordinate_sums
+		@test first(large_scratch.parallel_scratch)[2] === large_scratch.factor_buffer
+		@test BigRiverEssence._mofa_check_parallel_scratch(large_scratch, 500, 40) === nothing
+	end
 end
 
 @testset "Gaussian weights: hand-calculated one-factor update" begin
